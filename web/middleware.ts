@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 // Paths that don't require completed onboarding. Onboarding itself plus the
 // PWA manifest/SW are always allowed; the regex matcher already excludes
 // static assets.
-const ONBOARDING_EXEMPT_PREFIXES = ["/onboarding", "/api"];
+const ONBOARDING_EXEMPT_PREFIXES = ["/onboarding", "/api", "/v1"];
 
 function needsOnboardingRedirect(request: NextRequest): boolean {
   const { pathname } = request.nextUrl;
@@ -39,7 +39,7 @@ export function middleware(request: NextRequest): NextResponse {
     `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
-    `connect-src 'self' ${process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"} https://api.nutriroll.app`,
+    "connect-src 'self' https://api.nutriroll.app",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
