@@ -5,7 +5,8 @@
   },
   "nav": {
     "components": "Komponenten",
-    "roll": "Schüssel würfeln"
+    "roll": "Schüssel würfeln",
+    "recipe": "Rezept"
   },
   "roll": {
     "title": "Schüssel würfeln",
@@ -19,6 +20,7 @@
     "rolling": "Würfle…",
     "results": "Deine Schüssel",
     "rerollSlot": "Neu würfeln",
+    "cookNow": "Jetzt kochen",
     "error": "Konnte keine Schüssel würfeln: {message}",
     "dietary": {
       "any": "Beliebig",
@@ -26,6 +28,17 @@
       "vegetarian": "Vegetarisch",
       "pescatarian": "Pescetarisch"
     }
+  },
+  "recipe": {
+    "title": "Kochrezept",
+    "subtitle": "Parallele Kochblöcke, so geordnet, dass alles gleichzeitig fertig wird.",
+    "loading": "Rezept wird erstellt…",
+    "missing": "Keine Schüssel gefunden. Würfle zuerst eine und klicke dann \"Jetzt kochen\".",
+    "backToRoll": "Zurück zu Würfeln",
+    "blocks": "Kochblöcke",
+    "totalMinutes": "Gesamtzeit: ~{minutes} Min.",
+    "minutes": "~{minutes} Min.",
+    "error": "Konnte kein Rezept erstellen: {message}"
   },
   "components": {
     "title": "Komponenten",

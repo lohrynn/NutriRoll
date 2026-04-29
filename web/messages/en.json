@@ -5,7 +5,8 @@
   },
   "nav": {
     "components": "Components",
-    "roll": "Roll a bowl"
+    "roll": "Roll a bowl",
+    "recipe": "Recipe"
   },
   "roll": {
     "title": "Roll a bowl",
@@ -19,6 +20,7 @@
     "rolling": "Rolling…",
     "results": "Your bowl",
     "rerollSlot": "Reroll",
+    "cookNow": "Cook now",
     "error": "Couldn't roll a bowl: {message}",
     "dietary": {
       "any": "Any",
@@ -26,6 +28,17 @@
       "vegetarian": "Vegetarian",
       "pescatarian": "Pescatarian"
     }
+  },
+  "recipe": {
+    "title": "Cooking recipe",
+    "subtitle": "Parallel cooking blocks ordered so everything finishes together.",
+    "loading": "Building recipe…",
+    "missing": "No bowl found. Roll one first, then click \"Cook now\".",
+    "backToRoll": "Back to Roll",
+    "blocks": "Cooking blocks",
+    "totalMinutes": "Total time: ~{minutes} min.",
+    "minutes": "~{minutes} min",
+    "error": "Couldn't build recipe: {message}"
   },
   "components": {
     "title": "Components",

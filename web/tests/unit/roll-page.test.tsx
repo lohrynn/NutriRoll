@@ -13,6 +13,10 @@ vi.mock("@/lib/api/client", () => ({
   },
 }));
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 import { RollPage } from "@/components/roll-page";
 
 function wrap(node: ReactNode) {

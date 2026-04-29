@@ -1,10 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { apiClient } from "@/lib/api/client";
 import type { Category, CookingMethod } from "@/lib/components/types";
+import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
 import { DEFAULT_SLOTS, type RolledBowl, type RolledSlot } from "@/lib/roll/types";
 
 type Status =
@@ -37,6 +39,7 @@ function parseCsv(input: string): string[] {
 export function RollPage() {
   const t = useTranslations("roll");
   const tCategory = useTranslations("components.category");
+  const router = useRouter();
 
   const [controls, setControls] = useState<RollControls>(INITIAL_CONTROLS);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -184,7 +187,25 @@ export function RollPage() {
 
       {status.kind === "ok" && (
         <section aria-label={t("results")} className="grid gap-3">
-          <h2 className="text-lg font-medium">{t("results")}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-medium">{t("results")}</h2>
+            <button
+              type="button"
+              onClick={() => {
+                if (status.kind !== "ok") return;
+                if (typeof window !== "undefined") {
+                  window.sessionStorage.setItem(
+                    ROLLED_BOWL_STORAGE_KEY,
+                    JSON.stringify(status.bowl),
+                  );
+                }
+                router.push("/recipe");
+              }}
+              className="rounded bg-foreground px-3 py-1.5 text-xs font-medium text-background"
+            >
+              {t("cookNow")}
+            </button>
+          </div>
           <ul className="grid gap-2">
             {status.bowl.slots.map((slot, idx) => (
               <li

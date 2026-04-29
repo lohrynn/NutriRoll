@@ -17,3 +17,5 @@ Phases map directly to the milestone list in `PROJECT_VISION.md § "MVP scoping 
 | [phase-1-step-3-roll-algorithm.md](phase-1-step-3-roll-algorithm.md) | ✅ Done | Pure-function roll algorithm (Steps A–F) + hypothesis tests |
 | [phase-2-step-1-roll-api.md](phase-2-step-1-roll-api.md) | ✅ Done | `POST /v1/roll` and `POST /v1/roll/slot` endpoints |
 | [phase-2-step-2-roll-page.md](phase-2-step-2-roll-page.md) | ✅ Done | `/roll` page: constraints form, bowl rendering, single-slot reroll |
+| [phase-3-step-1-recipe-api.md](phase-3-step-1-recipe-api.md) | ✅ Done | Recipe builder + `POST /v1/recipe` endpoint |
+| [phase-3-step-2-recipe-page.md](phase-3-step-2-recipe-page.md) | ✅ Done | `/recipe` page + "Cook now" handoff from Roll |
