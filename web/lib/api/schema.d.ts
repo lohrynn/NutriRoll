@@ -58,6 +58,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/roll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Roll a bowl */
+        post: operations["roll_bowl_v1_roll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/roll/slot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-roll a single slot */
+        post: operations["reroll_one_slot_v1_roll_slot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -149,6 +183,39 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** FeatureWeightsSchema */
+        FeatureWeightsSchema: {
+            /**
+             * Novelty
+             * @default 0.2
+             */
+            novelty: number;
+            /**
+             * Nutrition Fit
+             * @default 0.15
+             */
+            nutrition_fit: number;
+            /**
+             * Pantry Bonus
+             * @default 0.05
+             */
+            pantry_bonus: number;
+            /**
+             * Price Fit
+             * @default 0.2
+             */
+            price_fit: number;
+            /**
+             * Taste Match
+             * @default 0.3
+             */
+            taste_match: number;
+            /**
+             * Time Fit
+             * @default 0.1
+             */
+            time_fit: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -185,6 +252,66 @@ export interface components {
          * @enum {string}
          */
         PortionUnit: "g" | "ml" | "pc";
+        /**
+         * RerollSlotRequestSchema
+         * @description Re-roll a single slot. The client keeps the rest of the bowl
+         *     locally and splices in the returned slot. Server stays stateless.
+         */
+        RerollSlotRequestSchema: {
+            /** Exclude Component Ids */
+            exclude_component_ids?: string[];
+            request: components["schemas"]["RollRequestSchema"];
+            slot_category: components["schemas"]["Category"];
+        };
+        /** RollRequestSchema */
+        RollRequestSchema: {
+            /** Allergens Excluded */
+            allergens_excluded?: string[];
+            /** Blacklisted Ids */
+            blacklisted_ids?: string[];
+            /** Dietary Mode */
+            dietary_mode?: string | null;
+            /** Forced Methods */
+            forced_methods?: {
+                [key: string]: components["schemas"]["CookingMethod"];
+            };
+            /** Recent Component Ids */
+            recent_component_ids?: string[];
+            /** Seed */
+            seed?: number | null;
+            /** Slots */
+            slots: components["schemas"]["SlotSpecSchema"][];
+            /**
+             * Temperature
+             * @default 0.5
+             */
+            temperature: number;
+            /** Time Budget Min */
+            time_budget_min?: number | null;
+            weights?: components["schemas"]["FeatureWeightsSchema"];
+        };
+        /** RolledBowlSchema */
+        RolledBowlSchema: {
+            /** Slots */
+            slots: components["schemas"]["RolledSlotSchema"][];
+        };
+        /** RolledSlotSchema */
+        RolledSlotSchema: {
+            component: components["schemas"]["ComponentRead"];
+            /** Reasons */
+            reasons: string[];
+            /** Score */
+            score: number;
+        };
+        /** SlotSpecSchema */
+        SlotSpecSchema: {
+            category: components["schemas"]["Category"];
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -377,6 +504,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    roll_bowl_v1_roll_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RollRequestSchema"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolledBowlSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reroll_one_slot_v1_roll_slot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RerollSlotRequestSchema"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolledSlotSchema"];
+                };
             };
             /** @description Validation Error */
             422: {
