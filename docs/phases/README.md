@@ -24,3 +24,4 @@ Phases map directly to the milestone list in `PROJECT_VISION.md § "MVP scoping 
 | [phase-6-ratings-history.md](phase-6-ratings-history.md) | ✅ Done | Ratings (overall + per-component) + append-only history feed + `/cook`, `/history`, `/me` pages |
 | [phase-7-directions.md](phase-7-directions.md) | ✅ Done | Direction chips (cuisine/mood) + flavor-axis sliders + per-portion nutrition summary |
 | [phase-8-planning.md](phase-8-planning.md) | ✅ Done | Saved meals + week-view planner (`/saved`, `/plan`) + Save/Plan-today actions on Roll |
+| [phase-9-onboarding.md](phase-9-onboarding.md) | ✅ Done | `UserProfile` (`/v1/me/profile`) + 3-step `/onboarding` flow + Roll auto-prefill |

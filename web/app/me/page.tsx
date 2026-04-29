@@ -4,6 +4,7 @@ import {
   ChevronRight,
   ClipboardList,
   Heart,
+  Sparkles,
   Store as StoreIcon,
   User,
 } from "lucide-react";
@@ -19,6 +20,7 @@ const TILES = [
   { href: "/stores", icon: StoreIcon, key: "stores" as const },
   { href: "/saved", icon: Heart, key: "saved" as const },
   { href: "/history", icon: ClipboardList, key: "history" as const },
+  { href: "/onboarding", icon: Sparkles, key: "onboarding" as const },
 ] as const;
 
 export default async function MeRoute() {

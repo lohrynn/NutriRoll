@@ -1,0 +1,24 @@
+"""SQLAlchemy ORM model for the singleton user profile."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from sqlalchemy import JSON, Boolean, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from nutriroll.db.base import Base
+
+
+class UserProfileRow(Base):
+    """Singleton table — always exactly one row, with ``id == 1``."""
+
+    __tablename__ = "user_profile"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=False)
+    dietary_mode: Mapped[str] = mapped_column(String(32), nullable=False, default="")
+    allergens: Mapped[list[Any]] = mapped_column(JSON, nullable=False, default=list)
+    default_time_budget_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    goal: Mapped[str] = mapped_column(String(256), nullable=False, default="")
+    locale: Mapped[str] = mapped_column(String(8), nullable=False, default="en")
+    onboarded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

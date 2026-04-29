@@ -60,6 +60,10 @@
       "plan": {
         "title": "Essensplan",
         "description": "Plane Mahlzeiten für die Woche."
+      },
+      "onboarding": {
+        "title": "Einrichtung",
+        "description": "Willkommens-Flow erneut starten, um Präferenzen zu aktualisieren."
       }
     }
   },
@@ -368,6 +372,43 @@
       "shopped": "Eingekauft",
       "cooked": "Gekocht",
       "skipped": "Übersprungen"
+    }
+  },
+  "onboarding": {
+    "title": "Willkommen bei NutriRoll",
+    "subtitle": "30 Sekunden Setup — jede Bowl passt zu dir.",
+    "progress": "Einrichtungsfortschritt",
+    "skip": "Später",
+    "back": "Zurück",
+    "next": "Weiter",
+    "saving": "Speichere…",
+    "finish": "Los geht's",
+    "error": "Konnte nicht speichern: {message}",
+    "welcome": {
+      "title": "Eine ausgewogene Bowl in Sekunden.",
+      "body": "Sag uns ein paar Dinge — wir berücksichtigen sie bei jeder Bowl.",
+      "bullet1": "Ein Tipp — eine komplette, ausgewogene Mahlzeit.",
+      "bullet2": "Filter für Ernährungsweise und Allergene.",
+      "bullet3": "Favoriten speichern, Woche planen, mit Timer kochen."
+    },
+    "dietary": {
+      "title": "Eine Ernährungsweise?",
+      "body": "Wir filtern Komponenten automatisch. Du kannst das jederzeit in den Einstellungen ändern."
+    },
+    "allergens": {
+      "title": "Etwas vermeiden?",
+      "body": "Komponenten mit einem dieser Tags werden ausgeschlossen.",
+      "tag": {
+        "dairy": "Milch",
+        "eggs": "Eier",
+        "gluten": "Gluten",
+        "nuts": "Nüsse",
+        "peanuts": "Erdnüsse",
+        "soy": "Soja",
+        "fish": "Fisch",
+        "shellfish": "Meeresfrüchte",
+        "sesame": "Sesam"
+      }
     }
   }
 }

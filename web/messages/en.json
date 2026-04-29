@@ -60,6 +60,10 @@
       "plan": {
         "title": "Meal plan",
         "description": "Schedule meals for the week."
+      },
+      "onboarding": {
+        "title": "Onboarding",
+        "description": "Re-run the welcome flow to update preferences."
       }
     }
   },
@@ -368,6 +372,43 @@
       "shopped": "Shopped",
       "cooked": "Cooked",
       "skipped": "Skipped"
+    }
+  },
+  "onboarding": {
+    "title": "Welcome to NutriRoll",
+    "subtitle": "A 30-second setup so every roll fits you.",
+    "progress": "Onboarding progress",
+    "skip": "Skip for now",
+    "back": "Back",
+    "next": "Next",
+    "saving": "Saving…",
+    "finish": "Start rolling",
+    "error": "Couldn't save: {message}",
+    "welcome": {
+      "title": "Roll a balanced bowl in seconds.",
+      "body": "Tell us a couple of things and we'll keep them in mind every time you roll.",
+      "bullet1": "Tap one button — get a complete, balanced meal.",
+      "bullet2": "Filters for dietary mode and allergens.",
+      "bullet3": "Save favorites, plan the week, cook with timers."
+    },
+    "dietary": {
+      "title": "Any dietary mode?",
+      "body": "We'll filter components automatically. You can change this anytime in settings."
+    },
+    "allergens": {
+      "title": "Anything to avoid?",
+      "body": "Components carrying any selected tag will be excluded.",
+      "tag": {
+        "dairy": "Dairy",
+        "eggs": "Eggs",
+        "gluten": "Gluten",
+        "nuts": "Nuts",
+        "peanuts": "Peanuts",
+        "soy": "Soy",
+        "fish": "Fish",
+        "shellfish": "Shellfish",
+        "sesame": "Sesame"
+      }
     }
   }
 }

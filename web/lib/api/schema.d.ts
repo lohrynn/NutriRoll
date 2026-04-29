@@ -93,6 +93,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get user profile */
+        get: operations["get_profile_v1_me_profile_get"];
+        /** Update user profile */
+        put: operations["update_profile_v1_me_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/pantry": {
         parameters: {
             query?: never;
@@ -1018,6 +1036,52 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** UserProfileRead */
+        UserProfileRead: {
+            /** Allergens */
+            allergens: string[];
+            /** Default Time Budget Min */
+            default_time_budget_min: number | null;
+            /**
+             * Dietary Mode
+             * @enum {string}
+             */
+            dietary_mode: "" | "vegan" | "vegetarian" | "pescatarian";
+            /** Goal */
+            goal: string;
+            /** Locale */
+            locale: string;
+            /** Onboarded */
+            onboarded: boolean;
+        };
+        /** UserProfileUpdate */
+        UserProfileUpdate: {
+            /** Allergens */
+            allergens?: string[];
+            /** Default Time Budget Min */
+            default_time_budget_min?: number | null;
+            /**
+             * Dietary Mode
+             * @default
+             * @enum {string}
+             */
+            dietary_mode: "" | "vegan" | "vegetarian" | "pescatarian";
+            /**
+             * Goal
+             * @default
+             */
+            goal: string;
+            /**
+             * Locale
+             * @default en
+             */
+            locale: string;
+            /**
+             * Onboarded
+             * @default false
+             */
+            onboarded: boolean;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -1304,6 +1368,59 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_profile_v1_me_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileRead"];
+                };
+            };
+        };
+    };
+    update_profile_v1_me_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfileRead"];
+                };
             };
             /** @description Validation Error */
             422: {

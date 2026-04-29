@@ -3,7 +3,7 @@
 import { ChefHat, Dice5, Flame, Salad, Sparkles, Utensils } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,29 @@ export function RollPage() {
   const [controls, setControls] = useState<RollControls>(INITIAL_CONTROLS);
   const [direction, setDirection] = useState<DirectionState>(INITIAL_DIRECTION);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  // Prefill dietary preferences + allergens from the user profile, but only
+  // on first mount and only if the user hasn't typed anything yet.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const result = await apiClient.GET("/v1/me/profile");
+      if (cancelled || !result.data) return;
+      const p = result.data;
+      setControls((c) => {
+        if (c.dietaryMode !== "" || c.allergensCsv !== "") return c;
+        return {
+          ...c,
+          dietaryMode: p.dietary_mode,
+          allergensCsv: p.allergens.join(", "),
+          timeBudgetMin: p.default_time_budget_min ?? c.timeBudgetMin,
+        };
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleSetMember = (which: "cuisines" | "moods", value: string) => {
     setDirection((d) => {
