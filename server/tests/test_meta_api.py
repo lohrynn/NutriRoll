@@ -22,6 +22,7 @@ async def test_meta_components_exposes_vocabulary(client: AsyncClient) -> None:
         "equipment",
         "method_requirements",
         "default_equipment",
+        "llm_configured",
     }
 
     # Categories include the four canonical slot kinds.
@@ -39,6 +40,8 @@ async def test_meta_components_exposes_vocabulary(client: AsyncClient) -> None:
     assert set(body["category_labels"]) == set(body["categories"])
     for label in body["category_labels"].values():
         assert isinstance(label, str) and label
+
+    assert isinstance(body["llm_configured"], bool)
 
     # Balanced targets expose the same five macro keys per category and stay
     # in sync with the values used by `_nutrition_fit()`.

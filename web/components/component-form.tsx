@@ -8,6 +8,7 @@ import { useAllowedMethods, useCategories, useComponentMeta } from "@/lib/compon
 import {
   type Category,
   type ComponentCreate,
+  type ComponentGenerateResponse,
   type ComponentRead,
   type CookingMethod,
   MACRO_KEYS,
@@ -16,6 +17,7 @@ import {
   type PortionUnit,
   parseCsvList,
 } from "@/lib/components/types";
+import type { UserProfileRead } from "@/lib/profile/types";
 
 interface MethodRow {
   method: CookingMethod;
@@ -30,6 +32,17 @@ interface Props {
   onUpdated?: (component: ComponentRead) => void;
   onCancel?: () => void;
   initialValues?: ComponentRead;
+}
+
+const AI_DEVICE_ID_KEY = "nutriroll.ai.device_id";
+
+function getAiDeviceId(): string {
+  const existing = window.localStorage.getItem(AI_DEVICE_ID_KEY);
+  if (existing) return existing;
+  const next =
+    globalThis.crypto?.randomUUID?.() ?? `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  window.localStorage.setItem(AI_DEVICE_ID_KEY, next);
+  return next;
 }
 
 export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialValues }: Props) {
@@ -64,6 +77,9 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
   const [shelfLifeDays, setShelfLifeDays] = useState(() =>
     initialValues?.shelf_life_days != null ? String(initialValues.shelf_life_days) : "",
   );
+  const [seasonalAvailability, setSeasonalAvailability] = useState(
+    () => initialValues?.seasonal_availability ?? "",
+  );
   const [blacklisted, setBlacklisted] = useState(() => initialValues?.blacklisted ?? false);
   const [methods, setMethods] = useState<MethodRow[]>(() =>
     initialValues
@@ -80,10 +96,46 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
   );
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiErrorMessage, setAiErrorMessage] = useState<string | null>(null);
+  const [aiConfidence, setAiConfidence] = useState<number | null>(null);
 
   const allowed = useAllowedMethods(category);
   const categories = useCategories();
   const meta = useComponentMeta();
+  const isLlmConfigured = meta?.llm_configured ?? false;
+
+  function applyComponentValues(component: ComponentCreate | ComponentRead): void {
+    setCategory(component.category);
+    setName(component.name);
+    setImageUrl(component.image_url ?? "");
+    setPortionValue(String(component.default_portion.value));
+    setPortionUnit(component.default_portion.unit);
+    setMacros(
+      Object.fromEntries(
+        MACRO_KEYS.map((key) => [key, String(component.macros_per_100g[key] ?? 0)]),
+      ) as Record<MacroKey, string>,
+    );
+    setMethods(
+      component.cooking_methods.map((row) => ({
+        method: row.method,
+        approxMinutes: row.approx_minutes != null ? String(row.approx_minutes) : "",
+        canCookWithOthers: row.can_cook_with_others,
+        notes: row.notes ?? "",
+      })),
+    );
+    setDefaultMethod(component.default_cooking_method);
+    setFlavorTags((component.flavor_tags ?? []).join(", "));
+    setDietaryTags((component.dietary_tags ?? []).join(", "));
+    setAllergens((component.allergens ?? []).join(", "));
+    setShelfLifeDays(
+      component.shelf_life_days != null ? String(component.shelf_life_days) : "",
+    );
+    setSeasonalAvailability(component.seasonal_availability ?? "");
+    setBlacklisted(component.blacklisted);
+  }
 
   function changeCategory(next: Category) {
     setCategory(next);
@@ -126,6 +178,44 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
     });
   }
 
+  async function handleAiGenerate(): Promise<void> {
+    setAiLoading(true);
+    setAiErrorMessage(null);
+    setAiConfidence(null);
+    setErrorMessage(null);
+    try {
+      const profileResult = await apiClient.GET("/v1/me/profile");
+      const profile: UserProfileRead | undefined =
+        profileResult.error || !profileResult.data ? undefined : profileResult.data;
+      const requestBody = profile ? { prompt: aiPrompt.trim(), profile } : { prompt: aiPrompt.trim() };
+      const { data, error, response } = await apiClient.POST("/v1/components/generate", {
+        body: requestBody,
+        headers: {
+          "x-device-id": getAiDeviceId(),
+        },
+      });
+      if (error || !data) {
+        const detail =
+          typeof error === "object" && error !== null && "detail" in error
+            ? String((error as { detail: unknown }).detail)
+            : `HTTP ${response.status}`;
+        setAiErrorMessage(t("ai.generateFailed", { message: detail }));
+        return;
+      }
+      const generated = data as ComponentGenerateResponse;
+      applyComponentValues(generated.component);
+      setAiConfidence(generated.confidence);
+    } catch (err) {
+      setAiErrorMessage(
+        t("ai.generateFailed", {
+          message: err instanceof Error ? err.message : "unknown",
+        }),
+      );
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setSubmitting(true);
@@ -154,6 +244,8 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
       dietary_tags: parseCsvList(dietaryTags),
       allergens: parseCsvList(allergens),
       shelf_life_days: shelfLifeDays === "" ? null : Number(shelfLifeDays),
+      seasonal_availability:
+        seasonalAvailability.trim() === "" ? null : seasonalAvailability.trim(),
       blacklisted,
     };
 
@@ -186,6 +278,8 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
         setFlavorTags("");
         setDietaryTags("");
         setAllergens("");
+        setSeasonalAvailability("");
+        setAiConfidence(null);
       }
     } catch (err) {
       setErrorMessage(
@@ -200,6 +294,76 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
+      <fieldset className="grid gap-3 rounded border border-current/20 p-3">
+        <legend className="px-1 text-sm font-medium">{t("ai.legend")}</legend>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={aiEnabled}
+            onChange={(e) => setAiEnabled(e.target.checked)}
+          />
+          {t("ai.toggle")}
+        </label>
+        {aiEnabled ? (
+          <div className="grid gap-3">
+            <label htmlFor="cmp-ai-prompt" className="grid gap-2 text-sm">
+              <span className="font-medium">{t("ai.promptLabel")}</span>
+              <textarea
+                id="cmp-ai-prompt"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder={t("ai.promptPlaceholder")}
+                rows={4}
+                className="rounded border border-current/30 bg-transparent px-3 py-2"
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleAiGenerate()}
+                disabled={aiLoading || !isLlmConfigured || aiPrompt.trim() === ""}
+                className="rounded border border-current/40 px-4 py-2 text-sm font-medium disabled:opacity-50"
+              >
+                {!isLlmConfigured
+                  ? t("ai.notConfiguredButton")
+                  : aiLoading
+                    ? t("ai.generating")
+                    : t("ai.generate")}
+              </button>
+              <p className="text-xs text-[color:var(--color-muted)]">{t("ai.reviewHint")}</p>
+            </div>
+            {!isLlmConfigured ? (
+              <output
+                aria-live="polite"
+                className="rounded border border-current/20 bg-black/5 p-3 text-sm text-[color:var(--color-muted)]"
+              >
+                {t("ai.notConfiguredHelp")}
+              </output>
+            ) : null}
+            {aiLoading ? (
+              <div
+                aria-live="polite"
+                className="grid gap-2 rounded border border-current/10 p-3 animate-pulse"
+              >
+                <div className="h-4 rounded bg-current/10" />
+                <div className="h-4 rounded bg-current/10" />
+                <div className="h-20 rounded bg-current/10" />
+              </div>
+            ) : null}
+            {aiErrorMessage !== null ? (
+              <output aria-live="polite" className="text-sm text-red-600">
+                {aiErrorMessage}
+              </output>
+            ) : null}
+            {aiConfidence !== null ? (
+              <p className="text-xs text-[color:var(--color-muted)]">
+                {t("ai.confidence", { value: Math.round(aiConfidence * 100) })}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </fieldset>
+
       <div className="grid gap-2">
         <label htmlFor="cmp-name" className="text-sm font-medium">
           {t("name")}
@@ -417,6 +581,17 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
             min={0}
             value={shelfLifeDays}
             onChange={(e) => setShelfLifeDays(e.target.value)}
+            className="rounded border border-current/30 bg-transparent px-3 py-2"
+          />
+        </div>
+        <div className="grid gap-2">
+          <label htmlFor="cmp-seasonal" className="text-sm font-medium">
+            {t("seasonal_availability")}
+          </label>
+          <input
+            id="cmp-seasonal"
+            value={seasonalAvailability}
+            onChange={(e) => setSeasonalAvailability(e.target.value)}
             className="rounded border border-current/30 bg-transparent px-3 py-2"
           />
         </div>

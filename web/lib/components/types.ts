@@ -5,6 +5,7 @@ export type CookingMethod = openapi["schemas"]["CookingMethod"];
 export type PortionUnit = openapi["schemas"]["PortionUnit"];
 export type ComponentRead = openapi["schemas"]["ComponentRead"];
 export type ComponentCreate = openapi["schemas"]["ComponentCreate"];
+export type ComponentGenerateResponse = openapi["schemas"]["ComponentGenerateResponse"];
 export type CookingMethodSpec = openapi["schemas"]["CookingMethodSpecSchema"];
 export type Macros = openapi["schemas"]["MacrosSchema"];
 export type Equipment = openapi["schemas"]["Equipment"];

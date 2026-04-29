@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -37,6 +37,21 @@ class Settings(BaseSettings):
     llm_key_master: str = Field(
         default="dev-only-not-for-prod-replace-me",
         description="Master key used to envelope-encrypt per-user LLM API keys.",
+    )
+    llm_model: str = Field(
+        default="gpt-4o-mini",
+        validation_alias=AliasChoices("NUTRIOLL_LLM_MODEL", "NUTRIROLL_LLM_MODEL"),
+        description="Default model used for prompt-based component generation.",
+    )
+    llm_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        validation_alias=AliasChoices("NUTRIROLL_LLM_BASE_URL", "OPENAI_BASE_URL"),
+        description="Base URL for the chat-completions compatible LLM provider.",
+    )
+    openai_api_key: str = Field(
+        default="",
+        validation_alias="OPENAI_API_KEY",
+        description="API key used for prompt-based component generation.",
     )
 
     @property

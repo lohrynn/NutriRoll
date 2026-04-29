@@ -1,9 +1,22 @@
 from __future__ import annotations
 
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from httpx import AsyncClient
+
+from nutriroll.api.routers import components as components_router
+from nutriroll.domain.component import (
+    Category,
+    Component,
+    CookingMethod,
+    CookingMethodSpec,
+    Macros,
+    Portion,
+    PortionUnit,
+)
+from nutriroll.domain.llm_component_builder import LLMBuildError, LLMGeneratedComponent
 
 
 def _valid_payload(**overrides: Any) -> dict[str, Any]:
@@ -164,3 +177,119 @@ async def test_delete(client: AsyncClient) -> None:
 async def test_get_unknown_returns_404(client: AsyncClient) -> None:
     response = await client.get("/v1/components/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 404
+
+
+def _generated_component(name: str = "Toasted quinoa") -> Component:
+    return Component(
+        id=uuid4(),
+        category=Category.BASE,
+        name=name,
+        image_url=None,
+        macros_per_100g=Macros(kcal=120, carbs_g=21, protein_g=4.4, fat_g=1.9, fiber_g=2.8),
+        default_portion=Portion(value=85, unit=PortionUnit.GRAM),
+        default_cooking_method=CookingMethod.TOAST,
+        cooking_methods=(
+            CookingMethodSpec(
+                method=CookingMethod.TOAST,
+                approx_minutes=15,
+                can_cook_with_others=True,
+                notes="Toast after simmering for crunch.",
+            ),
+        ),
+        flavor_tags=("nutty", "crunchy"),
+        dietary_tags=("vegan",),
+        allergens=(),
+        shelf_life_days=4,
+        seasonal_availability="year-round",
+        blacklisted=False,
+    )
+
+
+@pytest.mark.asyncio
+async def test_generate_component_returns_structured_payload(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    components_router._generate_rate_limit_cache.clear()
+
+    class _FakeBuilder:
+        model = "test-model"
+
+        def build_from_prompt(
+            self, prompt: str, profile: object | None
+        ) -> LLMGeneratedComponent:
+            assert prompt == "a crunchy toasted quinoa base"
+            return LLMGeneratedComponent(
+                component=_generated_component(),
+                raw_llm_output='{"name":"Toasted quinoa"}',
+                confidence=0.88,
+            )
+
+    monkeypatch.setattr(components_router, "LLMComponentBuilder", _FakeBuilder)
+
+    response = await client.post(
+        "/v1/components/generate",
+        json={"prompt": "a crunchy toasted quinoa base"},
+        headers={"x-device-id": "device-1"},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["component"]["name"] == "Toasted quinoa"
+    assert body["component"]["seasonal_availability"] == "year-round"
+    assert body["confidence"] == pytest.approx(0.88)
+
+
+@pytest.mark.asyncio
+async def test_generate_component_returns_problem_detail_on_builder_error(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    components_router._generate_rate_limit_cache.clear()
+
+    class _FakeBuilder:
+        model = "test-model"
+
+        def build_from_prompt(self, prompt: str, profile: object | None) -> LLMGeneratedComponent:
+            raise LLMBuildError("The AI response was incomplete.")
+
+    monkeypatch.setattr(components_router, "LLMComponentBuilder", _FakeBuilder)
+
+    response = await client.post(
+        "/v1/components/generate",
+        json={"prompt": "bad prompt"},
+        headers={"x-device-id": "device-2"},
+    )
+    assert response.status_code == 503
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["detail"] == "The AI response was incomplete."
+
+
+@pytest.mark.asyncio
+async def test_generate_component_rate_limits_per_device(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    components_router._generate_rate_limit_cache.clear()
+
+    class _FakeBuilder:
+        model = "test-model"
+
+        def build_from_prompt(self, prompt: str, profile: object | None) -> LLMGeneratedComponent:
+            return LLMGeneratedComponent(
+                component=_generated_component("Quick quinoa"),
+                raw_llm_output='{"name":"Quick quinoa"}',
+                confidence=0.8,
+            )
+
+    monkeypatch.setattr(components_router, "LLMComponentBuilder", _FakeBuilder)
+
+    first = await client.post(
+        "/v1/components/generate",
+        json={"prompt": "first"},
+        headers={"x-device-id": "device-3"},
+    )
+    second = await client.post(
+        "/v1/components/generate",
+        json={"prompt": "second"},
+        headers={"x-device-id": "device-3"},
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 429

@@ -215,12 +215,26 @@
       "dietary_tags": "Dietary tags (comma-separated)",
       "allergens": "Allergens (comma-separated)",
       "shelf_life_days": "Shelf life (days, optional)",
+      "seasonal_availability": "Seasonality / availability (optional)",
       "blacklisted": "Blacklisted",
       "submit": "Save component",
       "submitting": "Saving…",
       "cancel": "Cancel",
       "addMethod": "Add cooking method",
       "removeMethod": "Remove",
+      "ai": {
+        "legend": "Generate with AI",
+        "toggle": "Use AI to draft this component",
+        "promptLabel": "Describe the component",
+        "promptPlaceholder": "Example: a crunchy toasted quinoa base that takes 15 minutes",
+        "generate": "Generate",
+        "generating": "Generating…",
+        "notConfiguredButton": "LLM features not configured",
+        "notConfiguredHelp": "LLM features are not configured on this server.",
+        "reviewHint": "Review the generated fields, then click Save to keep the component.",
+        "confidence": "AI confidence: {value}%",
+        "generateFailed": "Could not generate: {message}"
+      },
       "errors": {
         "required": "Required",
         "submitFailed": "Could not save: {message}"

@@ -215,12 +215,26 @@
       "dietary_tags": "Ernährungs-Tags (kommagetrennt)",
       "allergens": "Allergene (kommagetrennt)",
       "shelf_life_days": "Haltbarkeit (Tage, optional)",
+      "seasonal_availability": "Saisonalität / Verfügbarkeit (optional)",
       "blacklisted": "Blockiert",
       "submit": "Komponente speichern",
       "submitting": "Speichern…",
       "cancel": "Abbrechen",
       "addMethod": "Zubereitung hinzufügen",
       "removeMethod": "Entfernen",
+      "ai": {
+        "legend": "Mit KI generieren",
+        "toggle": "KI zum Entwurf dieser Komponente nutzen",
+        "promptLabel": "Komponente beschreiben",
+        "promptPlaceholder": "Beispiel: eine knusprige getoastete Quinoa-Basis, die 15 Minuten braucht",
+        "generate": "Generieren",
+        "generating": "Generiere…",
+        "notConfiguredButton": "LLM-Funktionen nicht konfiguriert",
+        "notConfiguredHelp": "LLM-Funktionen sind auf diesem Server nicht konfiguriert.",
+        "reviewHint": "Prüfe die generierten Felder und speichere erst dann die Komponente.",
+        "confidence": "KI-Konfidenz: {value}%",
+        "generateFailed": "Generierung fehlgeschlagen: {message}"
+      },
       "errors": {
         "required": "Pflichtfeld",
         "submitFailed": "Speichern fehlgeschlagen: {message}"

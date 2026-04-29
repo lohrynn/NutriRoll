@@ -13,6 +13,11 @@ from nutriroll.domain.component import (
     Portion,
     PortionUnit,
 )
+from nutriroll.domain.llm_component_builder import (
+    LLMBuildError,
+    LLMComponentBuilder,
+    _LLMResponse,
+)
 
 
 def _make(**overrides: object) -> Component:
@@ -77,3 +82,69 @@ def test_negative_macros_rejected() -> None:
 def test_zero_portion_rejected() -> None:
     with pytest.raises(ValueError, match="portion"):
         Portion(value=0, unit=PortionUnit.GRAM)
+
+
+class _StubBuilder(LLMComponentBuilder):
+    def __init__(self, raw_output: str, *, api_key: str = "test-key") -> None:
+        super().__init__(api_key=api_key, model="test-model", base_url="https://example.test/v1")
+        self._raw_output = raw_output
+
+    def _request_component_json(self, prompt: str, profile: object) -> _LLMResponse:
+        return _LLMResponse(raw_output=self._raw_output, confidence=0.91)
+
+
+def test_llm_builder_happy_path() -> None:
+    builder = _StubBuilder(
+        """
+        {
+          "category": "base",
+          "name": "Toasted quinoa",
+          "image_url": null,
+          "macros_per_100g": {
+            "kcal": 120,
+            "carbs_g": 21,
+            "protein_g": 4.4,
+            "fat_g": 1.9,
+            "fiber_g": 2.8
+          },
+          "default_portion": { "value": 85, "unit": "g" },
+          "default_cooking_method": "toast",
+          "cooking_methods": [
+            {
+              "method": "toast",
+              "approx_minutes": 15,
+              "can_cook_with_others": true,
+              "notes": "Toast after simmering for crunch."
+            }
+          ],
+          "flavor_tags": ["nutty", "crunchy"],
+          "dietary_tags": ["vegan", "gluten_free"],
+          "allergens": [],
+          "shelf_life_days": 4,
+          "seasonal_availability": "year-round",
+          "blacklisted": false,
+          "confidence": 0.91
+        }
+        """
+    )
+
+    component = builder.generate_from_prompt("a crunchy toasted quinoa base")
+
+    assert component.name == "Toasted quinoa"
+    assert component.category == Category.BASE
+    assert component.default_cooking_method == CookingMethod.TOAST
+    assert component.default_portion.unit == PortionUnit.GRAM
+
+
+def test_llm_builder_malformed_response_returns_friendly_error() -> None:
+    builder = _StubBuilder('{"category":"base","name":"Broken"}')
+
+    with pytest.raises(LLMBuildError, match="missing 'macros_per_100g'"):
+        builder.generate_from_prompt("broken payload")
+
+
+def test_llm_builder_missing_api_key_returns_friendly_error() -> None:
+    builder = _StubBuilder("{}", api_key="")
+
+    with pytest.raises(LLMBuildError, match="not configured"):
+        builder.generate_from_prompt("quinoa")

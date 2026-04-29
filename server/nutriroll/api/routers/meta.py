@@ -47,6 +47,8 @@ class ComponentMeta(BaseModel):
     sync with the algorithm's hard-filter rules (modularity-audit pattern)."""
     default_equipment: list[Equipment]
     """Phase 13. Sensible defaults for new users (oven + stovetop + microwave)."""
+    llm_configured: bool
+    """Whether prompt-based component generation is available on this server."""
 
 
 @router.get(
@@ -55,6 +57,9 @@ class ComponentMeta(BaseModel):
     summary="Component vocabulary (categories, portion units, allowed methods, balanced targets)",
 )
 async def get_component_meta() -> ComponentMeta:
+    from nutriroll.config import get_settings
+
+    settings = get_settings()
     return ComponentMeta(
         categories=list(Category),
         portion_units=list(PortionUnit),
@@ -75,4 +80,5 @@ async def get_component_meta() -> ComponentMeta:
             for method in CookingMethod
         },
         default_equipment=sorted(DEFAULT_EQUIPMENT, key=lambda e: e.value),
+        llm_configured=bool(settings.openai_api_key.strip()),
     )

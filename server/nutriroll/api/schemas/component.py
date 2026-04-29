@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -17,8 +17,28 @@ from nutriroll.domain.component import (
     Portion,
     PortionUnit,
 )
+from nutriroll.domain.profile import UserProfile
 
 NonEmptyStr = Annotated[str, Field(min_length=1, max_length=200)]
+DietaryMode = Literal["", "vegan", "vegetarian", "pescatarian"]
+
+
+def _component_kwargs(c: Component) -> dict[str, object]:
+    return {
+        "category": c.category,
+        "name": c.name,
+        "image_url": c.image_url,
+        "macros_per_100g": MacrosSchema.from_domain(c.macros_per_100g),
+        "default_portion": PortionSchema.from_domain(c.default_portion),
+        "default_cooking_method": c.default_cooking_method,
+        "cooking_methods": [CookingMethodSpecSchema.from_domain(s) for s in c.cooking_methods],
+        "flavor_tags": list(c.flavor_tags),
+        "dietary_tags": list(c.dietary_tags),
+        "allergens": list(c.allergens),
+        "shelf_life_days": c.shelf_life_days,
+        "seasonal_availability": c.seasonal_availability,
+        "blacklisted": c.blacklisted,
+    }
 
 
 class MacrosSchema(BaseModel):
@@ -151,7 +171,9 @@ class ComponentBase(BaseModel):
 
 
 class ComponentCreate(ComponentBase):
-    pass
+    @classmethod
+    def from_domain(cls, c: Component) -> ComponentCreate:
+        return cls(**_component_kwargs(c))
 
 
 class ComponentRead(ComponentBase):
@@ -159,22 +181,43 @@ class ComponentRead(ComponentBase):
 
     @classmethod
     def from_domain(cls, c: Component) -> ComponentRead:
-        return cls(
-            id=c.id,
-            category=c.category,
-            name=c.name,
-            image_url=c.image_url,
-            macros_per_100g=MacrosSchema.from_domain(c.macros_per_100g),
-            default_portion=PortionSchema.from_domain(c.default_portion),
-            default_cooking_method=c.default_cooking_method,
-            cooking_methods=[CookingMethodSpecSchema.from_domain(s) for s in c.cooking_methods],
-            flavor_tags=list(c.flavor_tags),
-            dietary_tags=list(c.dietary_tags),
-            allergens=list(c.allergens),
-            shelf_life_days=c.shelf_life_days,
-            seasonal_availability=c.seasonal_availability,
-            blacklisted=c.blacklisted,
+        return cls(id=c.id, **_component_kwargs(c))
+
+
+class ComponentGenerateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    prompt: str = Field(min_length=1, max_length=2000)
+    profile: "ComponentGenerateProfileSchema | None" = None
+
+
+class ComponentGenerateProfileSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    dietary_mode: DietaryMode = ""
+    allergens: list[str] = Field(default_factory=list)
+    default_time_budget_min: int | None = Field(default=None, gt=0)
+    goal: str = Field(default="", max_length=256)
+    locale: str = Field(default="en", max_length=8)
+    onboarded: bool = False
+
+    def to_domain(self) -> UserProfile:
+        return UserProfile(
+            dietary_mode=self.dietary_mode,
+            allergens=tuple(self.allergens),
+            default_time_budget_min=self.default_time_budget_min,
+            goal=self.goal,
+            locale=self.locale,
+            onboarded=self.onboarded,
         )
+
+
+class ComponentGenerateResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    component: ComponentCreate
+    raw_llm_output: str | None = Field(default=None, max_length=20000)
+    confidence: float = Field(ge=0, le=1)
 
 
 class ComponentList(BaseModel):
@@ -187,6 +230,9 @@ class ComponentList(BaseModel):
 __all__ = [
     "ComponentBase",
     "ComponentCreate",
+    "ComponentGenerateProfileSchema",
+    "ComponentGenerateRequest",
+    "ComponentGenerateResponse",
     "ComponentList",
     "ComponentRead",
     "CookingMethodSpecSchema",

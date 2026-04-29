@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/components/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a component from a natural-language prompt */
+        post: operations["generate_component_v1_components_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/components/{component_id}": {
         parameters: {
             query?: never;
@@ -475,6 +492,48 @@ export interface components {
             /** Shelf Life Days */
             shelf_life_days?: number | null;
         };
+        /** ComponentGenerateProfileSchema */
+        ComponentGenerateProfileSchema: {
+            /** Allergens */
+            allergens?: string[];
+            /** Default Time Budget Min */
+            default_time_budget_min?: number | null;
+            /**
+             * Dietary Mode
+             * @default
+             * @enum {string}
+             */
+            dietary_mode: "" | "vegan" | "vegetarian" | "pescatarian";
+            /**
+             * Goal
+             * @default
+             */
+            goal: string;
+            /**
+             * Locale
+             * @default en
+             */
+            locale: string;
+            /**
+             * Onboarded
+             * @default false
+             */
+            onboarded: boolean;
+        };
+        /** ComponentGenerateRequest */
+        ComponentGenerateRequest: {
+            profile?: components["schemas"]["ComponentGenerateProfileSchema"] | null;
+            /** Prompt */
+            prompt: string;
+        };
+        /** ComponentGenerateResponse */
+        ComponentGenerateResponse: {
+            component: components["schemas"]["ComponentCreate"];
+            /** Confidence */
+            confidence: number;
+            /** Raw Llm Output */
+            raw_llm_output?: string | null;
+        };
         /** ComponentList */
         ComponentList: {
             /** Items */
@@ -506,6 +565,8 @@ export interface components {
             equipment: components["schemas"]["Equipment"][];
             /** Expiry Warning Days */
             expiry_warning_days: number;
+            /** Llm Configured */
+            llm_configured: boolean;
             /** Method Requirements */
             method_requirements: {
                 [key: string]: components["schemas"]["Equipment"][];
@@ -914,6 +975,22 @@ export interface components {
             pack_price: number;
             /** Pack Size */
             pack_size: number;
+        };
+        /** ProblemDetail */
+        ProblemDetail: {
+            /** Detail */
+            detail: string;
+            /** Instance */
+            instance?: string | null;
+            /** Status */
+            status: number;
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @default about:blank
+             */
+            type: string;
         };
         /** RatingCreate */
         RatingCreate: {
@@ -1339,6 +1416,66 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_component_v1_components_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComponentGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComponentGenerateResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too Many Requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
                 };
             };
         };
