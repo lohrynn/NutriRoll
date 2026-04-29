@@ -13,3 +13,5 @@ Phases map directly to the milestone list in `PROJECT_VISION.md § "MVP scoping 
 |---|---|---|
 | [phase-0-foundation.md](phase-0-foundation.md) | ✅ Done | Project scaffold, FastAPI health-check, Next.js shell, CI wiring |
 | [phase-1-step-1-component-library.md](phase-1-step-1-component-library.md) | ✅ Done | Component domain + CRUD API + manual editor UI |
+| [phase-1-step-2-seed-loader.md](phase-1-step-2-seed-loader.md) | ✅ Done | CSV → DB idempotent seed loader (70 components) |
+| [phase-1-step-3-roll-algorithm.md](phase-1-step-3-roll-algorithm.md) | ✅ Done | Pure-function roll algorithm (Steps A–F) + hypothesis tests |
