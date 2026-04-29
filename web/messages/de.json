@@ -4,7 +4,28 @@
     "tagline": "In Sekunden eine günstige, leckere Bowl würfeln."
   },
   "nav": {
-    "components": "Komponenten"
+    "components": "Komponenten",
+    "roll": "Schüssel würfeln"
+  },
+  "roll": {
+    "title": "Schüssel würfeln",
+    "subtitle": "Eine ausgewogene Schüssel in Sekunden. Würfle Slots neu, die dir nicht passen.",
+    "constraints": "Einschränkungen",
+    "timeBudget": "Zeitbudget (Minuten)",
+    "dietaryMode": "Ernährungsweise",
+    "allergens": "Auszuschließende Allergene",
+    "allergensPlaceholder": "komma-getrennt, z. B. Milch, Nüsse",
+    "rollButton": "Schüssel würfeln",
+    "rolling": "Würfle…",
+    "results": "Deine Schüssel",
+    "rerollSlot": "Neu würfeln",
+    "error": "Konnte keine Schüssel würfeln: {message}",
+    "dietary": {
+      "any": "Beliebig",
+      "vegan": "Vegan",
+      "vegetarian": "Vegetarisch",
+      "pescatarian": "Pescetarisch"
+    }
   },
   "components": {
     "title": "Komponenten",

@@ -4,7 +4,28 @@
     "tagline": "Roll a cheap, tasty bowl in seconds."
   },
   "nav": {
-    "components": "Components"
+    "components": "Components",
+    "roll": "Roll a bowl"
+  },
+  "roll": {
+    "title": "Roll a bowl",
+    "subtitle": "Get a balanced bowl in seconds. Reroll any slot you don't like.",
+    "constraints": "Constraints",
+    "timeBudget": "Time budget (minutes)",
+    "dietaryMode": "Dietary mode",
+    "allergens": "Allergens to exclude",
+    "allergensPlaceholder": "comma-separated, e.g. dairy, nuts",
+    "rollButton": "Roll a bowl",
+    "rolling": "Rolling…",
+    "results": "Your bowl",
+    "rerollSlot": "Reroll",
+    "error": "Couldn't roll a bowl: {message}",
+    "dietary": {
+      "any": "Any",
+      "vegan": "Vegan",
+      "vegetarian": "Vegetarian",
+      "pescatarian": "Pescatarian"
+    }
   },
   "components": {
     "title": "Components",
