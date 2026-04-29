@@ -30,6 +30,8 @@ def _planned_to_domain(row: PlannedMealRow) -> PlannedMeal:
         bowl_snapshot=dict(row.bowl_snapshot) if row.bowl_snapshot else {},
         status=PlannedStatus(row.status),
         notes=row.notes,
+        portions_total=row.portions_total,
+        portions_remaining=row.portions_remaining,
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -98,6 +100,8 @@ class PlannedMealRepository:
             bowl_snapshot=meal.bowl_snapshot,
             status=meal.status.value,
             notes=meal.notes,
+            portions_total=meal.portions_total,
+            portions_remaining=meal.portions_remaining,
         )
         self._session.add(row)
         await self._session.commit()
@@ -135,3 +139,19 @@ class PlannedMealRepository:
         await self._session.delete(row)
         await self._session.commit()
         return True
+
+    async def mark_eaten(self, meal_id: UUID) -> PlannedMeal | None:
+        """Phase 12. Decrement ``portions_remaining`` by 1; when it hits 0,
+        flip ``status`` to ``cooked`` so the planner UI can stop showing the
+        entry as actionable. No-op (returns current state) if already 0.
+        """
+        row = await self._session.get(PlannedMealRow, meal_id)
+        if row is None:
+            return None
+        if row.portions_remaining > 0:
+            row.portions_remaining -= 1
+        if row.portions_remaining == 0 and row.status != PlannedStatus.COOKED.value:
+            row.status = PlannedStatus.COOKED.value
+        await self._session.commit()
+        await self._session.refresh(row)
+        return _planned_to_domain(row)

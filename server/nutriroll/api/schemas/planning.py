@@ -61,6 +61,8 @@ class PlannedMealCreate(BaseModel):
     bowl_snapshot: dict[str, Any] = Field(default_factory=dict)
     status: PlannedStatus = PlannedStatus.PLANNED
     notes: str = Field(default="", max_length=1024)
+    portions_total: int = Field(default=1, ge=1, le=14)
+    """Phase 12. ``1`` = single meal; >1 = meal-prep batch."""
 
 
 class PlannedMealUpdate(BaseModel):
@@ -81,6 +83,8 @@ class PlannedMealRead(BaseModel):
     bowl_snapshot: dict[str, Any]
     status: PlannedStatus
     notes: str
+    portions_total: int
+    portions_remaining: int
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
@@ -93,6 +97,8 @@ class PlannedMealRead(BaseModel):
             bowl_snapshot=dict(m.bowl_snapshot),
             status=m.status,
             notes=m.notes,
+            portions_total=m.portions_total,
+            portions_remaining=m.portions_remaining,
             created_at=m.created_at,
             updated_at=m.updated_at,
         )

@@ -51,5 +51,21 @@ class PlannedMeal:
     bowl_snapshot: dict[str, Any] = field(default_factory=dict[str, Any])
     status: PlannedStatus = PlannedStatus.PLANNED
     notes: str = ""
+    portions_total: int = 1
+    """Phase 12. How many portions this entry was prepped for. ``1`` for a
+    classic single-meal plan; >1 for a meal-prep batch (e.g. cook 4 lunches at
+    once). Constant across the lifetime of the row."""
+    portions_remaining: int = 1
+    """Phase 12. Decrements by 1 each time the user marks a portion eaten.
+    When it reaches 0 the planner UI moves the entry to ``cooked``."""
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        if self.portions_total < 1 or self.portions_total > 14:
+            raise ValueError(f"portions_total must be in [1, 14], got {self.portions_total}")
+        if self.portions_remaining < 0 or self.portions_remaining > self.portions_total:
+            raise ValueError(
+                "portions_remaining must be in [0, portions_total], "
+                f"got {self.portions_remaining}/{self.portions_total}"
+            )

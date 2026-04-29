@@ -97,6 +97,8 @@ async def create_planned(
         bowl_snapshot=dict(payload.bowl_snapshot),
         status=payload.status,
         notes=payload.notes,
+        portions_total=payload.portions_total,
+        portions_remaining=payload.portions_total,
     )
     saved = await repo.create(meal)
     return PlannedMealRead.from_domain(saved)
@@ -135,6 +137,21 @@ async def delete_planned(meal_id: UUID, session: AsyncSession = Depends(get_sess
     if not await repo.delete(meal_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@planned_router.post(
+    "/{meal_id}/mark-eaten",
+    response_model=PlannedMealRead,
+    summary="Mark one portion of a meal-prep batch as eaten (Phase 12)",
+)
+async def mark_planned_eaten(
+    meal_id: UUID, session: AsyncSession = Depends(get_session)
+) -> PlannedMealRead:
+    repo = PlannedMealRepository(session)
+    updated = await repo.mark_eaten(meal_id)
+    if updated is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
+    return PlannedMealRead.from_domain(updated)
 
 
 __all__ = ["planned_router", "saved_router"]

@@ -52,3 +52,31 @@ at once.
   belongs to the equipment phase.
 - Storage / shelf-life suggestions per prep — needs ingredient-level
   shelf-life data not yet in seed.
+
+---
+
+## Implementation log (built)
+
+**Backend**
+- `domain/roll.py`: `RollRequest.portions` (1–14, validated in `__post_init__`).
+  Roll output is portions-independent — portions are a downstream multiplier.
+- `domain/planning.py`: `PlannedMeal.portions_total` and `portions_remaining`.
+- `db/models/planning.py`: integer columns with NOT NULL default 1.
+- `db/repositories/planning.py`: new `mark_eaten()` decrements
+  `portions_remaining`; flips status to `cooked` when it reaches 0.
+- `api/schemas/planning.py`: `PlannedMealCreate.portions_total` (1–14);
+  `PlannedMealRead` exposes both fields.
+- `api/routers/planning.py`: `POST /v1/planned/{meal_id}/mark-eaten`.
+- Alembic 0009: `planned_meals.portions_total` + `portions_remaining` (default 1).
+
+**Frontend**
+- `web/components/roll-page.tsx`: portions stepper in Constraints; sends
+  `portions` in roll body and `portions_total` when planning today.
+- `web/components/plan-page.tsx`: portions-remaining badge; "Mark a portion
+  eaten" button hidden when remaining hits 0; auto-flips to cooked.
+- i18n: `roll.portions`, `plan.portions`, `plan.markEaten` in en+de.
+
+**Tests**
+- `tests/test_planning_api.py`: 4 new tests (default portions = 1; mark-eaten
+  decrement-then-cooked; 404 on unknown id; portions_total bounds 1–14).
+- All 103 server + 12 web tests pass.

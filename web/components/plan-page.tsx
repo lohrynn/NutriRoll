@@ -121,6 +121,13 @@ export function PlanPage() {
     await load();
   };
 
+  const markEaten = async (id: string) => {
+    await apiClient.POST("/v1/planned/{meal_id}/mark-eaten", {
+      params: { path: { meal_id: id } },
+    });
+    await load();
+  };
+
   const itemsByDay = useMemo(() => {
     const map = new Map<string, PlannedMealRead[]>();
     if (status.kind !== "ok") return map;
@@ -224,6 +231,14 @@ export function PlanPage() {
                           <Badge variant={STATUS_VARIANT[meal.status as PlannedStatus]}>
                             {tStatus(meal.status as PlannedStatus)}
                           </Badge>
+                          {meal.portions_total > 1 && (
+                            <Badge variant="brand">
+                              {t("portions", {
+                                remaining: meal.portions_remaining,
+                                total: meal.portions_total,
+                              })}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex flex-wrap gap-1">
                           <Button
@@ -235,6 +250,16 @@ export function PlanPage() {
                             <ChefHat aria-hidden size={14} />
                             {t("cook")}
                           </Button>
+                          {meal.portions_remaining > 0 && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void markEaten(meal.id)}
+                            >
+                              {t("markEaten")}
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             size="sm"

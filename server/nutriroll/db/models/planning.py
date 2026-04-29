@@ -6,7 +6,7 @@ from datetime import date, datetime
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import JSON, Date, DateTime, String, Uuid, func
+from sqlalchemy import JSON, Date, DateTime, Integer, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from nutriroll.db.base import Base
@@ -33,6 +33,8 @@ class PlannedMealRow(Base):
     bowl_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="planned")
     notes: Mapped[str] = mapped_column(String(1024), nullable=False, default="")
+    portions_total: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    portions_remaining: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
