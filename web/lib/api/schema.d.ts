@@ -92,10 +92,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/recipe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build a recipe from chosen components */
+        post: operations["build_recipe_endpoint_v1_recipe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * BuildRecipeRequestSchema
+         * @description Build a Recipe from a list of chosen component ids.
+         *
+         *     The server reloads the components by id (cheap — pool is small) so
+         *     the client doesn't have to round-trip the entire bowl payload.
+         */
+        BuildRecipeRequestSchema: {
+            /** Component Ids */
+            component_ids: string[];
+            /** Forced Methods */
+            forced_methods?: {
+                [key: string]: components["schemas"]["CookingMethod"];
+            };
+        };
         /**
          * Category
          * @enum {string}
@@ -103,29 +135,29 @@ export interface components {
         Category: "base" | "vegetable" | "sauce" | "topping";
         /** ComponentCreate */
         ComponentCreate: {
+            category: components["schemas"]["Category"];
+            /** Name */
+            name: string;
+            /** Image Url */
+            image_url?: string | null;
+            macros_per_100g: components["schemas"]["MacrosSchema"];
+            default_portion: components["schemas"]["PortionSchema"];
+            default_cooking_method: components["schemas"]["CookingMethod"];
+            /** Cooking Methods */
+            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
+            /** Flavor Tags */
+            flavor_tags?: string[];
+            /** Dietary Tags */
+            dietary_tags?: string[];
             /** Allergens */
             allergens?: string[];
+            /** Shelf Life Days */
+            shelf_life_days?: number | null;
             /**
              * Blacklisted
              * @default false
              */
             blacklisted: boolean;
-            category: components["schemas"]["Category"];
-            /** Cooking Methods */
-            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
-            default_cooking_method: components["schemas"]["CookingMethod"];
-            default_portion: components["schemas"]["PortionSchema"];
-            /** Dietary Tags */
-            dietary_tags?: string[];
-            /** Flavor Tags */
-            flavor_tags?: string[];
-            /** Image Url */
-            image_url?: string | null;
-            macros_per_100g: components["schemas"]["MacrosSchema"];
-            /** Name */
-            name: string;
-            /** Shelf Life Days */
-            shelf_life_days?: number | null;
         };
         /** ComponentList */
         ComponentList: {
@@ -136,34 +168,34 @@ export interface components {
         };
         /** ComponentRead */
         ComponentRead: {
+            category: components["schemas"]["Category"];
+            /** Name */
+            name: string;
+            /** Image Url */
+            image_url?: string | null;
+            macros_per_100g: components["schemas"]["MacrosSchema"];
+            default_portion: components["schemas"]["PortionSchema"];
+            default_cooking_method: components["schemas"]["CookingMethod"];
+            /** Cooking Methods */
+            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
+            /** Flavor Tags */
+            flavor_tags?: string[];
+            /** Dietary Tags */
+            dietary_tags?: string[];
             /** Allergens */
             allergens?: string[];
+            /** Shelf Life Days */
+            shelf_life_days?: number | null;
             /**
              * Blacklisted
              * @default false
              */
             blacklisted: boolean;
-            category: components["schemas"]["Category"];
-            /** Cooking Methods */
-            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
-            default_cooking_method: components["schemas"]["CookingMethod"];
-            default_portion: components["schemas"]["PortionSchema"];
-            /** Dietary Tags */
-            dietary_tags?: string[];
-            /** Flavor Tags */
-            flavor_tags?: string[];
             /**
              * Id
              * Format: uuid
              */
             id: string;
-            /** Image Url */
-            image_url?: string | null;
-            macros_per_100g: components["schemas"]["MacrosSchema"];
-            /** Name */
-            name: string;
-            /** Shelf Life Days */
-            shelf_life_days?: number | null;
         };
         /**
          * CookingMethod
@@ -172,6 +204,7 @@ export interface components {
         CookingMethod: "boil" | "steam" | "blanch" | "pan_fry" | "roast" | "air_fry" | "grill" | "bake" | "toast" | "raw" | "no_prep" | "blend_cold" | "blend_hot" | "heat" | "whisk_cold" | "whisk_hot" | "reduce" | "saute_simmer" | "crumble" | "custom";
         /** CookingMethodSpecSchema */
         CookingMethodSpecSchema: {
+            method: components["schemas"]["CookingMethod"];
             /** Approx Minutes */
             approx_minutes?: number | null;
             /**
@@ -179,42 +212,41 @@ export interface components {
              * @default true
              */
             can_cook_with_others: boolean;
-            method: components["schemas"]["CookingMethod"];
             /** Notes */
             notes?: string | null;
         };
         /** FeatureWeightsSchema */
         FeatureWeightsSchema: {
             /**
+             * Taste Match
+             * @default 0.3
+             */
+            taste_match: number;
+            /**
              * Novelty
              * @default 0.2
              */
             novelty: number;
-            /**
-             * Nutrition Fit
-             * @default 0.15
-             */
-            nutrition_fit: number;
-            /**
-             * Pantry Bonus
-             * @default 0.05
-             */
-            pantry_bonus: number;
             /**
              * Price Fit
              * @default 0.2
              */
             price_fit: number;
             /**
-             * Taste Match
-             * @default 0.3
+             * Nutrition Fit
+             * @default 0.15
              */
-            taste_match: number;
+            nutrition_fit: number;
             /**
              * Time Fit
              * @default 0.1
              */
             time_fit: number;
+            /**
+             * Pantry Bonus
+             * @default 0.05
+             */
+            pantry_bonus: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -230,65 +262,99 @@ export interface components {
         };
         /** MacrosSchema */
         MacrosSchema: {
+            /** Kcal */
+            kcal: number;
             /** Carbs G */
             carbs_g: number;
+            /** Protein G */
+            protein_g: number;
             /** Fat G */
             fat_g: number;
             /** Fiber G */
             fiber_g: number;
-            /** Kcal */
-            kcal: number;
-            /** Protein G */
-            protein_g: number;
         };
         /** PortionSchema */
         PortionSchema: {
-            unit: components["schemas"]["PortionUnit"];
             /** Value */
             value: number;
+            unit: components["schemas"]["PortionUnit"];
         };
         /**
          * PortionUnit
          * @enum {string}
          */
         PortionUnit: "g" | "ml" | "pc";
+        /** RecipeBlockSchema */
+        RecipeBlockSchema: {
+            category: components["schemas"]["Category"];
+            /** Title */
+            title: string;
+            method: components["schemas"]["CookingMethod"];
+            /** Components */
+            components: components["schemas"]["ComponentRead"][];
+            /** Total Minutes */
+            total_minutes: number;
+            /** Can Cook With Others */
+            can_cook_with_others: boolean;
+            /** Steps */
+            steps: components["schemas"]["RecipeStepSchema"][];
+        };
+        /** RecipeSchema */
+        RecipeSchema: {
+            /** Blocks */
+            blocks: components["schemas"]["RecipeBlockSchema"][];
+            /** Total Minutes */
+            total_minutes: number;
+        };
+        /** RecipeStepSchema */
+        RecipeStepSchema: {
+            /** Text */
+            text: string;
+            /**
+             * Offset Min
+             * @default 0
+             */
+            offset_min: number;
+            /** Duration Min */
+            duration_min?: number | null;
+        };
         /**
          * RerollSlotRequestSchema
          * @description Re-roll a single slot. The client keeps the rest of the bowl
          *     locally and splices in the returned slot. Server stays stateless.
          */
         RerollSlotRequestSchema: {
-            /** Exclude Component Ids */
-            exclude_component_ids?: string[];
             request: components["schemas"]["RollRequestSchema"];
             slot_category: components["schemas"]["Category"];
+            /** Exclude Component Ids */
+            exclude_component_ids?: string[];
         };
         /** RollRequestSchema */
         RollRequestSchema: {
+            /** Slots */
+            slots: components["schemas"]["SlotSpecSchema"][];
+            /** Dietary Mode */
+            dietary_mode?: string | null;
             /** Allergens Excluded */
             allergens_excluded?: string[];
             /** Blacklisted Ids */
             blacklisted_ids?: string[];
-            /** Dietary Mode */
-            dietary_mode?: string | null;
+            /** Time Budget Min */
+            time_budget_min?: number | null;
             /** Forced Methods */
             forced_methods?: {
                 [key: string]: components["schemas"]["CookingMethod"];
             };
             /** Recent Component Ids */
             recent_component_ids?: string[];
-            /** Seed */
-            seed?: number | null;
-            /** Slots */
-            slots: components["schemas"]["SlotSpecSchema"][];
+            weights?: components["schemas"]["FeatureWeightsSchema"];
             /**
              * Temperature
              * @default 0.5
              */
             temperature: number;
-            /** Time Budget Min */
-            time_budget_min?: number | null;
-            weights?: components["schemas"]["FeatureWeightsSchema"];
+            /** Seed */
+            seed?: number | null;
         };
         /** RolledBowlSchema */
         RolledBowlSchema: {
@@ -298,10 +364,10 @@ export interface components {
         /** RolledSlotSchema */
         RolledSlotSchema: {
             component: components["schemas"]["ComponentRead"];
-            /** Reasons */
-            reasons: string[];
             /** Score */
             score: number;
+            /** Reasons */
+            reasons: string[];
         };
         /** SlotSpecSchema */
         SlotSpecSchema: {
@@ -314,16 +380,16 @@ export interface components {
         };
         /** ValidationError */
         ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -569,6 +635,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RolledSlotSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_recipe_endpoint_v1_recipe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildRecipeRequestSchema"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeSchema"];
                 };
             };
             /** @description Validation Error */
