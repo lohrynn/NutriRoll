@@ -18,7 +18,7 @@ interface Tab {
 
 const TABS: readonly Tab[] = [
   { href: "/roll", key: "roll", Icon: ChefHat, matches: ["/roll", "/recipe"] },
-  { href: "/history", key: "plan", Icon: ClipboardList, matches: ["/history"] },
+  { href: "/plan", key: "plan", Icon: ClipboardList, matches: ["/plan", "/saved", "/history"] },
   { href: "/shop", key: "shop", Icon: ShoppingBasket, matches: ["/shop", "/stores"] },
   { href: "/cook", key: "cook", Icon: Boxes, matches: ["/cook"] },
   { href: "/me", key: "me", Icon: User, matches: ["/me", "/components", "/pantry"] },

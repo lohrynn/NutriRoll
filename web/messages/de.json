@@ -52,6 +52,14 @@
       "history": {
         "title": "Verlauf",
         "description": "Jede gewürfelte, gekochte oder gespeicherte Mahlzeit."
+      },
+      "saved": {
+        "title": "Gespeicherte Bowls",
+        "description": "Deine Lieblings-Bowls, jederzeit wieder kochen."
+      },
+      "plan": {
+        "title": "Essensplan",
+        "description": "Plane Mahlzeiten für die Woche."
       }
     }
   },
@@ -68,6 +76,9 @@
     "results": "Deine Schüssel",
     "rerollSlot": "Neu würfeln",
     "cookNow": "Jetzt kochen",
+    "saveBowl": "Speichern",
+    "planToday": "Heute planen",
+    "savePrompt": "Wie soll diese Bowl heißen?",
     "error": "Konnte keine Schüssel würfeln: {message}",
     "dietary": {
       "any": "Beliebig",
@@ -319,5 +330,44 @@
     "filterRolled": "Gewürfelt",
     "filterCooked": "Gekocht",
     "filterRated": "Bewertet"
+  },
+  "saved": {
+    "title": "Gespeicherte Bowls",
+    "subtitle": "Deine Lieblings-Bowls. Mit einem Tipp wieder kochen.",
+    "loading": "Lade gespeicherte Bowls…",
+    "error": "Konnte gespeicherte Bowls nicht laden: {message}",
+    "empty": "Noch nichts gespeichert. Würfle eine Bowl, die dir gefällt, und tippe Speichern.",
+    "cook": "Kochen",
+    "delete": "Gespeicherte Bowl löschen",
+    "slots": "{count, plural, one {# Slot} other {# Slots}}",
+    "hintTitle": "Tipp",
+    "hintBody": "Gespeicherte Bowls können jederzeit wieder gekocht oder in den Plan übernommen werden."
+  },
+  "plan": {
+    "title": "Essensplan",
+    "subtitle": "Was wird diese Woche gekocht?",
+    "loading": "Lade Plan…",
+    "error": "Konnte Plan nicht laden: {message}",
+    "empty": "Nichts geplant.",
+    "prevWeek": "Vorherige Woche",
+    "nextWeek": "Nächste Woche",
+    "count": "{count, plural, =0 {leer} one {# Mahlzeit} other {# Mahlzeiten}}",
+    "cook": "Kochen",
+    "markCooked": "Als gekocht",
+    "undo": "Rückgängig",
+    "delete": "Geplante Mahlzeit löschen",
+    "hint": "Würfle eine Bowl und tippe „Heute planen“, um sie deiner Woche hinzuzufügen.",
+    "slot": {
+      "breakfast": "Frühstück",
+      "lunch": "Mittag",
+      "dinner": "Abend",
+      "snack": "Snack"
+    },
+    "status": {
+      "planned": "Geplant",
+      "shopped": "Eingekauft",
+      "cooked": "Gekocht",
+      "skipped": "Übersprungen"
+    }
   }
 }

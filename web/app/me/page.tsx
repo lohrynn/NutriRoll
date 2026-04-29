@@ -1,4 +1,12 @@
-import { Boxes, Carrot, ChevronRight, Store as StoreIcon, User } from "lucide-react";
+import {
+  Boxes,
+  Carrot,
+  ChevronRight,
+  ClipboardList,
+  Heart,
+  Store as StoreIcon,
+  User,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
@@ -9,6 +17,8 @@ const TILES = [
   { href: "/components", icon: Carrot, key: "components" as const },
   { href: "/pantry", icon: Boxes, key: "pantry" as const },
   { href: "/stores", icon: StoreIcon, key: "stores" as const },
+  { href: "/saved", icon: Heart, key: "saved" as const },
+  { href: "/history", icon: ClipboardList, key: "history" as const },
 ] as const;
 
 export default async function MeRoute() {

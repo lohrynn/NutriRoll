@@ -52,6 +52,14 @@
       "history": {
         "title": "History",
         "description": "Every meal you rolled, cooked or saved."
+      },
+      "saved": {
+        "title": "Saved meals",
+        "description": "Your favorite bowls, ready to cook again."
+      },
+      "plan": {
+        "title": "Meal plan",
+        "description": "Schedule meals for the week."
       }
     }
   },
@@ -68,6 +76,9 @@
     "results": "Your bowl",
     "rerollSlot": "Reroll",
     "cookNow": "Cook now",
+    "saveBowl": "Save",
+    "planToday": "Plan today",
+    "savePrompt": "Name this saved meal:",
     "error": "Couldn't roll a bowl: {message}",
     "dietary": {
       "any": "Any",
@@ -319,5 +330,44 @@
     "filterRolled": "Rolled",
     "filterCooked": "Cooked",
     "filterRated": "Rated"
+  },
+  "saved": {
+    "title": "Saved meals",
+    "subtitle": "Your favorite bowls. Cook them again with one tap.",
+    "loading": "Loading saved meals…",
+    "error": "Couldn't load saved meals: {message}",
+    "empty": "Nothing saved yet. Roll a bowl you love and tap Save.",
+    "cook": "Cook",
+    "delete": "Delete saved meal",
+    "slots": "{count, plural, one {# slot} other {# slots}}",
+    "hintTitle": "Tip",
+    "hintBody": "Saved meals can be added to your meal plan or cooked again any time."
+  },
+  "plan": {
+    "title": "Meal plan",
+    "subtitle": "Schedule what to cook this week.",
+    "loading": "Loading plan…",
+    "error": "Couldn't load plan: {message}",
+    "empty": "Nothing planned.",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "count": "{count, plural, =0 {empty} one {# meal} other {# meals}}",
+    "cook": "Cook",
+    "markCooked": "Mark cooked",
+    "undo": "Undo",
+    "delete": "Delete planned meal",
+    "hint": "Roll a bowl, tap \"Plan today\" to add it to your week.",
+    "slot": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "snack": "Snack"
+    },
+    "status": {
+      "planned": "Planned",
+      "shopped": "Shopped",
+      "cooked": "Cooked",
+      "skipped": "Skipped"
+    }
   }
 }

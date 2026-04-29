@@ -215,6 +215,43 @@ export function RollPage() {
     router.push("/recipe");
   }, [router, status]);
 
+  const saveBowl = useCallback(async () => {
+    if (status.kind !== "ok") return;
+    const fallbackName =
+      status.bowl.slots
+        .slice(0, 2)
+        .map((s) => s.component.name)
+        .join(" + ") || "Bowl";
+    const name =
+      typeof window !== "undefined"
+        ? (window.prompt(t("savePrompt"), fallbackName) ?? "").trim()
+        : "";
+    if (!name) return;
+    await apiClient.POST("/v1/saved", {
+      body: {
+        name,
+        bowl_snapshot: status.bowl as unknown as Record<string, unknown>,
+        notes: "",
+      },
+    });
+  }, [status, t]);
+
+  const planBowl = useCallback(async () => {
+    if (status.kind !== "ok") return;
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    await apiClient.POST("/v1/planned", {
+      body: {
+        planned_for: iso,
+        slot: "dinner",
+        bowl_snapshot: status.bowl as unknown as Record<string, unknown>,
+        status: "planned",
+        notes: "",
+      },
+    });
+    router.push("/plan");
+  }, [router, status]);
+
   return (
     <div className="grid gap-4">
       <Card>
@@ -394,10 +431,18 @@ export function RollPage() {
         <section aria-label={t("results")} className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold tracking-tight">{t("results")}</h2>
-            <Button type="button" size="sm" onClick={goCook}>
-              <ChefHat aria-hidden size={14} strokeWidth={2.4} />
-              {t("cookNow")}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={() => void saveBowl()}>
+                {t("saveBowl")}
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => void planBowl()}>
+                {t("planToday")}
+              </Button>
+              <Button type="button" size="sm" onClick={goCook}>
+                <ChefHat aria-hidden size={14} strokeWidth={2.4} />
+                {t("cookNow")}
+              </Button>
+            </div>
           </div>
           <Card>
             <CardContent className="grid gap-2">

@@ -129,6 +129,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/planned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List planned meals (optionally by range) */
+        get: operations["list_planned_v1_planned_get"];
+        put?: never;
+        /** Schedule a meal */
+        post: operations["create_planned_v1_planned_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/planned/{meal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a planned meal */
+        delete: operations["delete_planned_v1_planned__meal_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update a planned meal (move/restatus) */
+        patch: operations["update_planned_v1_planned__meal_id__patch"];
+        trace?: never;
+    };
     "/v1/ratings": {
         parameters: {
             query?: never;
@@ -193,6 +229,41 @@ export interface paths {
         /** Re-roll a single slot */
         post: operations["reroll_one_slot_v1_roll_slot_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/saved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List saved meals */
+        get: operations["list_saved_v1_saved_get"];
+        put?: never;
+        /** Save a bowl snapshot */
+        post: operations["create_saved_v1_saved_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/saved/{meal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a saved meal */
+        delete: operations["delete_saved_v1_saved__meal_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -529,6 +600,11 @@ export interface components {
             /** Protein G */
             protein_g: number;
         };
+        /**
+         * MealSlot
+         * @enum {string}
+         */
+        MealSlot: "breakfast" | "lunch" | "dinner" | "snack";
         /** PantryItemCreate */
         PantryItemCreate: {
             /**
@@ -577,6 +653,72 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** PlannedMealCreate */
+        PlannedMealCreate: {
+            /** Bowl Snapshot */
+            bowl_snapshot?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Planned For
+             * Format: date
+             */
+            planned_for: string;
+            slot: components["schemas"]["MealSlot"];
+            /** @default planned */
+            status: components["schemas"]["PlannedStatus"];
+        };
+        /** PlannedMealList */
+        PlannedMealList: {
+            /** Items */
+            items: components["schemas"]["PlannedMealRead"][];
+            /** Total */
+            total: number;
+        };
+        /** PlannedMealRead */
+        PlannedMealRead: {
+            /** Bowl Snapshot */
+            bowl_snapshot: {
+                [key: string]: unknown;
+            };
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Notes */
+            notes: string;
+            /**
+             * Planned For
+             * Format: date
+             */
+            planned_for: string;
+            slot: components["schemas"]["MealSlot"];
+            status: components["schemas"]["PlannedStatus"];
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** PlannedMealUpdate */
+        PlannedMealUpdate: {
+            /** Notes */
+            notes?: string | null;
+            /** Planned For */
+            planned_for?: string | null;
+            slot?: components["schemas"]["MealSlot"] | null;
+            status?: components["schemas"]["PlannedStatus"] | null;
+        };
+        /**
+         * PlannedStatus
+         * @enum {string}
+         */
+        PlannedStatus: "planned" | "shopped" | "cooked" | "skipped";
         /** PortionSchema */
         PortionSchema: {
             unit: components["schemas"]["PortionUnit"];
@@ -762,6 +904,45 @@ export interface components {
             reasons: string[];
             /** Score */
             score: number;
+        };
+        /** SavedMealCreate */
+        SavedMealCreate: {
+            /** Bowl Snapshot */
+            bowl_snapshot?: {
+                [key: string]: unknown;
+            };
+            /** Name */
+            name: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+        };
+        /** SavedMealList */
+        SavedMealList: {
+            /** Items */
+            items: components["schemas"]["SavedMealRead"][];
+            /** Total */
+            total: number;
+        };
+        /** SavedMealRead */
+        SavedMealRead: {
+            /** Bowl Snapshot */
+            bowl_snapshot: {
+                [key: string]: unknown;
+            };
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Notes */
+            notes: string;
         };
         /** ShoppingListItemRead */
         ShoppingListItemRead: {
@@ -1252,6 +1433,135 @@ export interface operations {
             };
         };
     };
+    list_planned_v1_planned_get: {
+        parameters: {
+            query?: {
+                start?: string | null;
+                end?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedMealList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_planned_v1_planned_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedMealCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedMealRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_planned_v1_planned__meal_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_planned_v1_planned__meal_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedMealUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedMealRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_ratings_v1_ratings_get: {
         parameters: {
             query?: {
@@ -1403,6 +1713,88 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RolledSlotSchema"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_saved_v1_saved_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedMealList"];
+                };
+            };
+        };
+    };
+    create_saved_v1_saved_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedMealCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SavedMealRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_saved_v1_saved__meal_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

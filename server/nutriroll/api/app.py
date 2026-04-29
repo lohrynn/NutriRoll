@@ -13,6 +13,7 @@ from nutriroll.api.routers import (
     healthz,
     history,
     pantry,
+    planning,
     ratings,
     recipe,
     roll,
@@ -64,6 +65,8 @@ def create_app() -> FastAPI:
     app.include_router(shopping.router)
     app.include_router(ratings.router)
     app.include_router(history.router)
+    app.include_router(planning.saved_router)
+    app.include_router(planning.planned_router)
 
     return app
 
