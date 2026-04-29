@@ -58,6 +58,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List history events */
+        get: operations["list_events_v1_history_get"];
+        put?: never;
+        /** Append a history event */
+        post: operations["create_event_v1_history_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/history/{event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a history event */
+        delete: operations["delete_event_v1_history__event_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pantry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pantry items */
+        get: operations["list_items_v1_pantry_get"];
+        put?: never;
+        /** Add a pantry item */
+        post: operations["create_item_v1_pantry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/pantry/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a pantry item */
+        put: operations["update_item_v1_pantry__item_id__put"];
+        post?: never;
+        /** Delete a pantry item */
+        delete: operations["delete_item_v1_pantry__item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ratings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List ratings (optionally per bowl) */
+        get: operations["list_ratings_v1_ratings_get"];
+        put?: never;
+        /** Add a rating */
+        post: operations["create_rating_v1_ratings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/recipe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Build a recipe from chosen components */
+        post: operations["build_recipe_endpoint_v1_recipe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/roll": {
         parameters: {
             query?: never;
@@ -92,7 +198,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/recipe": {
+    "/v1/shopping-list": {
         parameters: {
             query?: never;
             header?: never;
@@ -101,9 +207,80 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Build a recipe from chosen components */
-        post: operations["build_recipe_endpoint_v1_recipe_post"];
+        /** Build a shopping list from a bowl + portion count */
+        post: operations["build_list_v1_shopping_list_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List stores */
+        get: operations["list_stores_v1_stores_get"];
+        put?: never;
+        /** Create a store */
+        post: operations["create_store_v1_stores_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{store_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace a store */
+        put: operations["update_store_v1_stores__store_id__put"];
+        post?: never;
+        /** Delete a store and its prices */
+        delete: operations["delete_store_v1_stores__store_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{store_id}/prices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List prices for a store */
+        get: operations["list_prices_v1_stores__store_id__prices_get"];
+        /** Upsert a price (one per (store, component)) */
+        put: operations["upsert_price_v1_stores__store_id__prices_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/stores/{store_id}/prices/{price_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a price */
+        delete: operations["delete_price_v1_stores__store_id__prices__price_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -128,6 +305,20 @@ export interface components {
                 [key: string]: components["schemas"]["CookingMethod"];
             };
         };
+        /** BuildShoppingListRequest */
+        BuildShoppingListRequest: {
+            /** Component Ids */
+            component_ids: string[];
+            /** Portions */
+            portions: number;
+            /** Store Id */
+            store_id?: string | null;
+            /**
+             * Use Pantry
+             * @default true
+             */
+            use_pantry: boolean;
+        };
         /**
          * Category
          * @enum {string}
@@ -135,29 +326,29 @@ export interface components {
         Category: "base" | "vegetable" | "sauce" | "topping";
         /** ComponentCreate */
         ComponentCreate: {
-            category: components["schemas"]["Category"];
-            /** Name */
-            name: string;
-            /** Image Url */
-            image_url?: string | null;
-            macros_per_100g: components["schemas"]["MacrosSchema"];
-            default_portion: components["schemas"]["PortionSchema"];
-            default_cooking_method: components["schemas"]["CookingMethod"];
-            /** Cooking Methods */
-            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
-            /** Flavor Tags */
-            flavor_tags?: string[];
-            /** Dietary Tags */
-            dietary_tags?: string[];
             /** Allergens */
             allergens?: string[];
-            /** Shelf Life Days */
-            shelf_life_days?: number | null;
             /**
              * Blacklisted
              * @default false
              */
             blacklisted: boolean;
+            category: components["schemas"]["Category"];
+            /** Cooking Methods */
+            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
+            default_cooking_method: components["schemas"]["CookingMethod"];
+            default_portion: components["schemas"]["PortionSchema"];
+            /** Dietary Tags */
+            dietary_tags?: string[];
+            /** Flavor Tags */
+            flavor_tags?: string[];
+            /** Image Url */
+            image_url?: string | null;
+            macros_per_100g: components["schemas"]["MacrosSchema"];
+            /** Name */
+            name: string;
+            /** Shelf Life Days */
+            shelf_life_days?: number | null;
         };
         /** ComponentList */
         ComponentList: {
@@ -168,34 +359,34 @@ export interface components {
         };
         /** ComponentRead */
         ComponentRead: {
-            category: components["schemas"]["Category"];
-            /** Name */
-            name: string;
-            /** Image Url */
-            image_url?: string | null;
-            macros_per_100g: components["schemas"]["MacrosSchema"];
-            default_portion: components["schemas"]["PortionSchema"];
-            default_cooking_method: components["schemas"]["CookingMethod"];
-            /** Cooking Methods */
-            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
-            /** Flavor Tags */
-            flavor_tags?: string[];
-            /** Dietary Tags */
-            dietary_tags?: string[];
             /** Allergens */
             allergens?: string[];
-            /** Shelf Life Days */
-            shelf_life_days?: number | null;
             /**
              * Blacklisted
              * @default false
              */
             blacklisted: boolean;
+            category: components["schemas"]["Category"];
+            /** Cooking Methods */
+            cooking_methods: components["schemas"]["CookingMethodSpecSchema"][];
+            default_cooking_method: components["schemas"]["CookingMethod"];
+            default_portion: components["schemas"]["PortionSchema"];
+            /** Dietary Tags */
+            dietary_tags?: string[];
+            /** Flavor Tags */
+            flavor_tags?: string[];
             /**
              * Id
              * Format: uuid
              */
             id: string;
+            /** Image Url */
+            image_url?: string | null;
+            macros_per_100g: components["schemas"]["MacrosSchema"];
+            /** Name */
+            name: string;
+            /** Shelf Life Days */
+            shelf_life_days?: number | null;
         };
         /**
          * CookingMethod
@@ -204,7 +395,6 @@ export interface components {
         CookingMethod: "boil" | "steam" | "blanch" | "pan_fry" | "roast" | "air_fry" | "grill" | "bake" | "toast" | "raw" | "no_prep" | "blend_cold" | "blend_hot" | "heat" | "whisk_cold" | "whisk_hot" | "reduce" | "saute_simmer" | "crumble" | "custom";
         /** CookingMethodSpecSchema */
         CookingMethodSpecSchema: {
-            method: components["schemas"]["CookingMethod"];
             /** Approx Minutes */
             approx_minutes?: number | null;
             /**
@@ -212,41 +402,42 @@ export interface components {
              * @default true
              */
             can_cook_with_others: boolean;
+            method: components["schemas"]["CookingMethod"];
             /** Notes */
             notes?: string | null;
         };
         /** FeatureWeightsSchema */
         FeatureWeightsSchema: {
             /**
-             * Taste Match
-             * @default 0.3
-             */
-            taste_match: number;
-            /**
              * Novelty
              * @default 0.2
              */
             novelty: number;
-            /**
-             * Price Fit
-             * @default 0.2
-             */
-            price_fit: number;
             /**
              * Nutrition Fit
              * @default 0.15
              */
             nutrition_fit: number;
             /**
-             * Time Fit
-             * @default 0.1
-             */
-            time_fit: number;
-            /**
              * Pantry Bonus
              * @default 0.05
              */
             pantry_bonus: number;
+            /**
+             * Price Fit
+             * @default 0.2
+             */
+            price_fit: number;
+            /**
+             * Taste Match
+             * @default 0.3
+             */
+            taste_match: number;
+            /**
+             * Time Fit
+             * @default 0.1
+             */
+            time_fit: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -260,44 +451,216 @@ export interface components {
             /** Version */
             version: string;
         };
+        /** HistoryEventCreate */
+        HistoryEventCreate: {
+            /** Bowl Id */
+            bowl_id?: string | null;
+            kind: components["schemas"]["HistoryEventKind"];
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * HistoryEventKind
+         * @enum {string}
+         */
+        HistoryEventKind: "rolled" | "cooked" | "saved" | "rated" | "discarded";
+        /** HistoryEventRead */
+        HistoryEventRead: {
+            /** Bowl Id */
+            bowl_id?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["HistoryEventKind"];
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        /** HistoryList */
+        HistoryList: {
+            /** Items */
+            items: components["schemas"]["HistoryEventRead"][];
+            /** Total */
+            total: number;
+        };
         /** MacrosSchema */
         MacrosSchema: {
-            /** Kcal */
-            kcal: number;
             /** Carbs G */
             carbs_g: number;
-            /** Protein G */
-            protein_g: number;
             /** Fat G */
             fat_g: number;
             /** Fiber G */
             fiber_g: number;
+            /** Kcal */
+            kcal: number;
+            /** Protein G */
+            protein_g: number;
+        };
+        /** PantryItemCreate */
+        PantryItemCreate: {
+            /**
+             * Component Id
+             * Format: uuid
+             */
+            component_id: string;
+            /** Expires At */
+            expires_at?: string | null;
+            /**
+             * Opened
+             * @default false
+             */
+            opened: boolean;
+            /** Quantity */
+            quantity: number;
+            unit: components["schemas"]["PortionUnit"];
+        };
+        /** PantryItemRead */
+        PantryItemRead: {
+            /**
+             * Component Id
+             * Format: uuid
+             */
+            component_id: string;
+            /** Expires At */
+            expires_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Opened
+             * @default false
+             */
+            opened: boolean;
+            /** Quantity */
+            quantity: number;
+            unit: components["schemas"]["PortionUnit"];
+        };
+        /** PantryList */
+        PantryList: {
+            /** Items */
+            items: components["schemas"]["PantryItemRead"][];
+            /** Total */
+            total: number;
         };
         /** PortionSchema */
         PortionSchema: {
+            unit: components["schemas"]["PortionUnit"];
             /** Value */
             value: number;
-            unit: components["schemas"]["PortionUnit"];
         };
         /**
          * PortionUnit
          * @enum {string}
          */
         PortionUnit: "g" | "ml" | "pc";
+        /** PriceList */
+        PriceList: {
+            /** Items */
+            items: components["schemas"]["PriceRead"][];
+            /** Total */
+            total: number;
+        };
+        /** PriceRead */
+        PriceRead: {
+            /**
+             * Component Id
+             * Format: uuid
+             */
+            component_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Pack Price */
+            pack_price: number;
+            /** Pack Size */
+            pack_size: number;
+            /**
+             * Store Id
+             * Format: uuid
+             */
+            store_id: string;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** PriceUpsert */
+        PriceUpsert: {
+            /**
+             * Component Id
+             * Format: uuid
+             */
+            component_id: string;
+            /** Pack Price */
+            pack_price: number;
+            /** Pack Size */
+            pack_size: number;
+        };
+        /** RatingCreate */
+        RatingCreate: {
+            /**
+             * Bowl Id
+             * Format: uuid
+             */
+            bowl_id: string;
+            /** Comment */
+            comment?: string | null;
+            /** Component Id */
+            component_id?: string | null;
+            /** Score */
+            score: number;
+        };
+        /** RatingList */
+        RatingList: {
+            /** Items */
+            items: components["schemas"]["RatingRead"][];
+            /** Total */
+            total: number;
+        };
+        /** RatingRead */
+        RatingRead: {
+            /**
+             * Bowl Id
+             * Format: uuid
+             */
+            bowl_id: string;
+            /** Comment */
+            comment?: string | null;
+            /** Component Id */
+            component_id?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Score */
+            score: number;
+        };
         /** RecipeBlockSchema */
         RecipeBlockSchema: {
-            category: components["schemas"]["Category"];
-            /** Title */
-            title: string;
-            method: components["schemas"]["CookingMethod"];
-            /** Components */
-            components: components["schemas"]["ComponentRead"][];
-            /** Total Minutes */
-            total_minutes: number;
             /** Can Cook With Others */
             can_cook_with_others: boolean;
+            category: components["schemas"]["Category"];
+            /** Components */
+            components: components["schemas"]["ComponentRead"][];
+            method: components["schemas"]["CookingMethod"];
             /** Steps */
             steps: components["schemas"]["RecipeStepSchema"][];
+            /** Title */
+            title: string;
+            /** Total Minutes */
+            total_minutes: number;
         };
         /** RecipeSchema */
         RecipeSchema: {
@@ -308,15 +671,15 @@ export interface components {
         };
         /** RecipeStepSchema */
         RecipeStepSchema: {
-            /** Text */
-            text: string;
+            /** Duration Min */
+            duration_min?: number | null;
             /**
              * Offset Min
              * @default 0
              */
             offset_min: number;
-            /** Duration Min */
-            duration_min?: number | null;
+            /** Text */
+            text: string;
         };
         /**
          * RerollSlotRequestSchema
@@ -324,37 +687,37 @@ export interface components {
          *     locally and splices in the returned slot. Server stays stateless.
          */
         RerollSlotRequestSchema: {
-            request: components["schemas"]["RollRequestSchema"];
-            slot_category: components["schemas"]["Category"];
             /** Exclude Component Ids */
             exclude_component_ids?: string[];
+            request: components["schemas"]["RollRequestSchema"];
+            slot_category: components["schemas"]["Category"];
         };
         /** RollRequestSchema */
         RollRequestSchema: {
-            /** Slots */
-            slots: components["schemas"]["SlotSpecSchema"][];
-            /** Dietary Mode */
-            dietary_mode?: string | null;
             /** Allergens Excluded */
             allergens_excluded?: string[];
             /** Blacklisted Ids */
             blacklisted_ids?: string[];
-            /** Time Budget Min */
-            time_budget_min?: number | null;
+            /** Dietary Mode */
+            dietary_mode?: string | null;
             /** Forced Methods */
             forced_methods?: {
                 [key: string]: components["schemas"]["CookingMethod"];
             };
             /** Recent Component Ids */
             recent_component_ids?: string[];
-            weights?: components["schemas"]["FeatureWeightsSchema"];
+            /** Seed */
+            seed?: number | null;
+            /** Slots */
+            slots: components["schemas"]["SlotSpecSchema"][];
             /**
              * Temperature
              * @default 0.5
              */
             temperature: number;
-            /** Seed */
-            seed?: number | null;
+            /** Time Budget Min */
+            time_budget_min?: number | null;
+            weights?: components["schemas"]["FeatureWeightsSchema"];
         };
         /** RolledBowlSchema */
         RolledBowlSchema: {
@@ -364,10 +727,39 @@ export interface components {
         /** RolledSlotSchema */
         RolledSlotSchema: {
             component: components["schemas"]["ComponentRead"];
-            /** Score */
-            score: number;
             /** Reasons */
             reasons: string[];
+            /** Score */
+            score: number;
+        };
+        /** ShoppingListItemRead */
+        ShoppingListItemRead: {
+            component: components["schemas"]["ComponentRead"];
+            /** Line Price */
+            line_price?: number | null;
+            /** Pack Price */
+            pack_price?: number | null;
+            /** Pack Size */
+            pack_size?: number | null;
+            /** Packs To Buy */
+            packs_to_buy?: number | null;
+            /** Quantity Available In Pantry */
+            quantity_available_in_pantry: number;
+            /** Quantity Needed */
+            quantity_needed: number;
+            /** Quantity To Buy */
+            quantity_to_buy: number;
+        };
+        /** ShoppingListRead */
+        ShoppingListRead: {
+            /** Has Missing Prices */
+            has_missing_prices: boolean;
+            /** Items */
+            items: components["schemas"]["ShoppingListItemRead"][];
+            /** Portions */
+            portions: number;
+            /** Total Price */
+            total_price: number;
         };
         /** SlotSpecSchema */
         SlotSpecSchema: {
@@ -378,18 +770,54 @@ export interface components {
              */
             count: number;
         };
+        /** StoreCreate */
+        StoreCreate: {
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary: boolean;
+            /** Location */
+            location?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** StoreList */
+        StoreList: {
+            /** Items */
+            items: components["schemas"]["StoreRead"][];
+            /** Total */
+            total: number;
+        };
+        /** StoreRead */
+        StoreRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary: boolean;
+            /** Location */
+            location?: string | null;
+            /** Name */
+            name: string;
+        };
         /** ValidationError */
         ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -582,6 +1010,314 @@ export interface operations {
             };
         };
     };
+    list_events_v1_history_get: {
+        parameters: {
+            query?: {
+                kind?: components["schemas"]["HistoryEventKind"] | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_event_v1_history_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HistoryEventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryEventRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_event_v1_history__event_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_items_v1_pantry_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryList"];
+                };
+            };
+        };
+    };
+    create_item_v1_pantry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_item_v1_pantry__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryItemCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_item_v1_pantry__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_ratings_v1_ratings_get: {
+        parameters: {
+            query?: {
+                bowl_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_rating_v1_ratings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RatingCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RatingRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    build_recipe_endpoint_v1_recipe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BuildRecipeRequestSchema"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     roll_bowl_v1_roll_post: {
         parameters: {
             query?: never;
@@ -648,7 +1384,7 @@ export interface operations {
             };
         };
     };
-    build_recipe_endpoint_v1_recipe_post: {
+    build_list_v1_shopping_list_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -657,7 +1393,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BuildRecipeRequestSchema"];
+                "application/json": components["schemas"]["BuildShoppingListRequest"];
             };
         };
         responses: {
@@ -667,8 +1403,221 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["RecipeSchema"];
+                    "application/json": components["schemas"]["ShoppingListRead"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_stores_v1_stores_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreList"];
+                };
+            };
+        };
+    };
+    create_store_v1_stores_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_store_v1_stores__store_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoreCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoreRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_store_v1_stores__store_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_prices_v1_stores__store_id__prices_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_price_v1_stores__store_id__prices_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PriceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_price_v1_stores__store_id__prices__price_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                store_id: string;
+                price_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

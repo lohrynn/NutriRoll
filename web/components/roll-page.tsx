@@ -1,9 +1,15 @@
 "use client";
 
+import { ChefHat, Dice5, Flame, Salad, Sparkles, Utensils } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
 import type { Category, CookingMethod } from "@/lib/components/types";
 import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
@@ -27,6 +33,13 @@ const INITIAL_CONTROLS: RollControls = {
   dietaryMode: "",
   allergensCsv: "",
   forceBaseMethod: "",
+};
+
+const CATEGORY_ICON: Record<Category, typeof Salad> = {
+  base: Utensils,
+  vegetable: Salad,
+  sauce: Flame,
+  topping: Sparkles,
 };
 
 function parseCsv(input: string): string[] {
@@ -74,6 +87,19 @@ export function RollPage() {
         return;
       }
       setStatus({ kind: "ok", bowl: data });
+      void apiClient.POST("/v1/history", {
+        body: {
+          kind: "rolled",
+          bowl_id: null,
+          payload: {
+            components: data.slots.map((s) => ({
+              id: s.component.id,
+              name: s.component.name,
+              category: s.component.category,
+            })),
+          },
+        },
+      });
     } catch (err) {
       setStatus({
         kind: "error",
@@ -115,72 +141,93 @@ export function RollPage() {
     [buildRequestBody, status],
   );
 
+  const goCook = useCallback(() => {
+    if (status.kind !== "ok") return;
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(status.bowl));
+    }
+    void apiClient.POST("/v1/history", {
+      body: {
+        kind: "cooked",
+        bowl_id: null,
+        payload: {
+          components: status.bowl.slots.map((s) => ({
+            id: s.component.id,
+            name: s.component.name,
+            category: s.component.category,
+          })),
+        },
+      },
+    });
+    router.push("/recipe");
+  }, [router, status]);
+
   return (
-    <div className="grid gap-6">
-      <header className="grid gap-1">
-        <h1 className="text-2xl font-semibold">{t("title")}</h1>
-        <p className="text-sm opacity-70">{t("subtitle")}</p>
-      </header>
+    <div className="grid gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("constraints")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5 text-sm">
+              <span className="font-medium">{t("timeBudget")}</span>
+              <Input
+                type="number"
+                min={0}
+                max={600}
+                value={controls.timeBudgetMin}
+                onChange={(e) =>
+                  setControls((c) => ({
+                    ...c,
+                    timeBudgetMin: e.target.value === "" ? "" : Number(e.target.value),
+                  }))
+                }
+              />
+            </label>
 
-      <fieldset className="grid gap-3 rounded border border-current/20 p-4">
-        <legend className="px-2 text-sm font-medium">{t("constraints")}</legend>
+            <label className="grid gap-1.5 text-sm">
+              <span className="font-medium">{t("dietaryMode")}</span>
+              <Select
+                value={controls.dietaryMode}
+                onChange={(e) => setControls((c) => ({ ...c, dietaryMode: e.target.value }))}
+              >
+                <option value="">{t("dietary.any")}</option>
+                <option value="vegan">{t("dietary.vegan")}</option>
+                <option value="vegetarian">{t("dietary.vegetarian")}</option>
+                <option value="pescatarian">{t("dietary.pescatarian")}</option>
+              </Select>
+            </label>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          <label className="grid gap-1 text-sm">
-            <span>{t("timeBudget")}</span>
-            <input
-              type="number"
-              min={0}
-              max={600}
-              value={controls.timeBudgetMin}
-              onChange={(e) =>
-                setControls((c) => ({
-                  ...c,
-                  timeBudgetMin: e.target.value === "" ? "" : Number(e.target.value),
-                }))
-              }
-              className="rounded border border-current/30 bg-transparent px-2 py-1"
-            />
-          </label>
+            <label className="grid gap-1.5 text-sm sm:col-span-2">
+              <span className="font-medium">{t("allergens")}</span>
+              <Input
+                type="text"
+                value={controls.allergensCsv}
+                onChange={(e) => setControls((c) => ({ ...c, allergensCsv: e.target.value }))}
+                placeholder={t("allergensPlaceholder")}
+              />
+            </label>
+          </div>
+        </CardContent>
+      </Card>
 
-          <label className="grid gap-1 text-sm">
-            <span>{t("dietaryMode")}</span>
-            <select
-              value={controls.dietaryMode}
-              onChange={(e) => setControls((c) => ({ ...c, dietaryMode: e.target.value }))}
-              className="rounded border border-current/30 bg-transparent px-2 py-1"
-            >
-              <option value="">{t("dietary.any")}</option>
-              <option value="vegan">{t("dietary.vegan")}</option>
-              <option value="vegetarian">{t("dietary.vegetarian")}</option>
-              <option value="pescatarian">{t("dietary.pescatarian")}</option>
-            </select>
-          </label>
-
-          <label className="grid gap-1 text-sm sm:col-span-2">
-            <span>{t("allergens")}</span>
-            <input
-              type="text"
-              value={controls.allergensCsv}
-              onChange={(e) => setControls((c) => ({ ...c, allergensCsv: e.target.value }))}
-              placeholder={t("allergensPlaceholder")}
-              className="rounded border border-current/30 bg-transparent px-2 py-1"
-            />
-          </label>
-        </div>
-      </fieldset>
-
-      <button
+      <Button
         type="button"
+        size="lg"
         onClick={() => void rollAll()}
         disabled={status.kind === "rolling"}
-        className="rounded bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
+        className="w-full"
       >
+        <Dice5 aria-hidden size={18} strokeWidth={2.4} />
         {status.kind === "rolling" ? t("rolling") : t("rollButton")}
-      </button>
+      </Button>
 
       {status.kind === "error" && (
-        <output aria-live="polite" className="text-sm text-red-600">
+        <output
+          aria-live="polite"
+          className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger)]/10 p-3 text-sm text-[color:var(--color-danger)]"
+        >
           {t("error", { message: status.message })}
         </output>
       )}
@@ -188,52 +235,54 @@ export function RollPage() {
       {status.kind === "ok" && (
         <section aria-label={t("results")} className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-medium">{t("results")}</h2>
-            <button
-              type="button"
-              onClick={() => {
-                if (status.kind !== "ok") return;
-                if (typeof window !== "undefined") {
-                  window.sessionStorage.setItem(
-                    ROLLED_BOWL_STORAGE_KEY,
-                    JSON.stringify(status.bowl),
-                  );
-                }
-                router.push("/recipe");
-              }}
-              className="rounded bg-foreground px-3 py-1.5 text-xs font-medium text-background"
-            >
+            <h2 className="text-lg font-semibold tracking-tight">{t("results")}</h2>
+            <Button type="button" size="sm" onClick={goCook}>
+              <ChefHat aria-hidden size={14} strokeWidth={2.4} />
               {t("cookNow")}
-            </button>
+            </Button>
           </div>
-          <ul className="grid gap-2">
-            {status.bowl.slots.map((slot, idx) => (
-              <li
-                key={`${slot.component.id}-${idx}`}
-                className="rounded border border-current/20 p-3 text-sm"
-              >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <div>
-                    <strong>{slot.component.name}</strong>{" "}
-                    <span className="text-xs opacity-70">{tCategory(slot.component.category)}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void rerollSlot(idx, slot)}
-                    className="rounded border border-current/30 px-2 py-1 text-xs"
-                  >
-                    {t("rerollSlot")}
-                  </button>
-                </div>
-                {slot.reasons.length > 0 && (
-                  <ul className="mt-1 list-disc pl-4 text-xs opacity-80">
-                    {slot.reasons.map((reason) => (
-                      <li key={reason}>{reason}</li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
+          <ul className="grid gap-3">
+            {status.bowl.slots.map((slot, idx) => {
+              const Icon = CATEGORY_ICON[slot.component.category];
+              return (
+                <li key={`${slot.component.id}-${idx}`}>
+                  <Card>
+                    <CardContent className="grid gap-2 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3">
+                          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)]">
+                            <Icon aria-hidden size={18} strokeWidth={2} />
+                          </span>
+                          <div className="grid gap-1">
+                            <div className="font-semibold leading-tight">{slot.component.name}</div>
+                            <Badge variant="brand">{tCategory(slot.component.category)}</Badge>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void rerollSlot(idx, slot)}
+                        >
+                          <Dice5 aria-hidden size={14} />
+                          {t("rerollSlot")}
+                        </Button>
+                      </div>
+                      {slot.reasons.length > 0 && (
+                        <ul className="grid gap-0.5 text-xs text-[color:var(--color-muted)]">
+                          {slot.reasons.map((reason) => (
+                            <li key={reason} className="flex gap-1.5">
+                              <span aria-hidden>•</span>
+                              <span>{reason}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

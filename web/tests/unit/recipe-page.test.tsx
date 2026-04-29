@@ -82,7 +82,7 @@ describe("RecipePage", () => {
   it("shows a missing-bowl message when sessionStorage is empty", async () => {
     render(wrap(<RecipePage />));
     await waitFor(() => {
-      expect(screen.getByRole("status")).toHaveTextContent(/no bowl found/i);
+      expect(screen.getByText(/no bowl found/i)).toBeInTheDocument();
     });
     expect(postMock).not.toHaveBeenCalled();
   });

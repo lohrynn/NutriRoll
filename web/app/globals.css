@@ -1,28 +1,93 @@
 @import "tailwindcss";
 
+/*
+ * Brand & surface tokens — NutriRoll's visual language.
+ * Warm, food-forward; one accent (sunset orange), graphite text,
+ * soft surfaces. Mobile-first with safe-area awareness for iOS PWA.
+ */
 @theme {
-  --color-bg: oklch(0.99 0 0);
-  --color-fg: oklch(0.18 0 0);
+  --color-bg: oklch(0.985 0.005 80);
+  --color-fg: oklch(0.18 0.015 60);
+  --color-muted: oklch(0.55 0.012 60);
+  --color-surface: oklch(1 0 0);
+  --color-surface-2: oklch(0.965 0.008 80);
+  --color-border: oklch(0.9 0.01 70);
+  --color-brand: oklch(0.66 0.19 35);
+  --color-brand-fg: oklch(0.99 0.005 80);
+  --color-brand-soft: oklch(0.94 0.05 40);
+  --color-success: oklch(0.62 0.14 150);
+  --color-danger: oklch(0.55 0.21 28);
+  --color-warning: oklch(0.74 0.16 75);
+
+  --radius-card: 1.25rem;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 1px 2px rgba(20, 14, 8, 0.04), 0 6px 24px -10px rgba(20, 14, 8, 0.12);
+  --shadow-pop: 0 1px 2px rgba(20, 14, 8, 0.05), 0 12px 36px -12px rgba(220, 90, 40, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-bg: oklch(0.16 0.012 60);
+    --color-fg: oklch(0.96 0.005 80);
+    --color-muted: oklch(0.7 0.01 70);
+    --color-surface: oklch(0.21 0.012 60);
+    --color-surface-2: oklch(0.255 0.012 60);
+    --color-border: oklch(0.32 0.01 60);
+    --color-brand: oklch(0.74 0.18 38);
+    --color-brand-fg: oklch(0.16 0.01 60);
+    --color-brand-soft: oklch(0.32 0.06 35);
+  }
 }
 
 :root {
   color-scheme: light dark;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 html,
 body {
   background: var(--color-bg);
   color: var(--color-fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-* {
-  outline-color: oklch(0.65 0.18 250);
+body {
+  min-height: 100dvh;
 }
 
-button:focus-visible,
-a:focus-visible,
-[role="button"]:focus-visible {
-  outline: 2px solid oklch(0.65 0.18 250);
+*:focus-visible {
+  outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+  border-radius: 6px;
+}
+
+button,
+[role="button"],
+a {
+  touch-action: manipulation;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Soft brand glow at the top of the viewport */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(120% 60% at 50% -10%, var(--color-brand-soft) 0%, transparent 60%);
+  opacity: 0.55;
 }

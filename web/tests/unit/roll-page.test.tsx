@@ -9,7 +9,14 @@ const postMock = vi.fn();
 
 vi.mock("@/lib/api/client", () => ({
   apiClient: {
-    POST: (...args: unknown[]) => postMock(...args),
+    POST: (...args: unknown[]) => {
+      const path = args[0] as string;
+      // Fire-and-forget telemetry endpoints should not consume queued mocks.
+      if (path === "/v1/history") {
+        return Promise.resolve({ data: undefined, error: undefined, response: { status: 204 } });
+      }
+      return postMock(...args);
+    },
   },
 }));
 

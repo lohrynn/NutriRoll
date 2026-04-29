@@ -1,13 +1,13 @@
 import { getTranslations } from "next-intl/server";
 
+import { CookPage } from "@/components/cook-page";
 import { PageShell } from "@/components/page-shell";
-import { RollPage } from "@/components/roll-page";
 
-export default async function RollRoute() {
-  const t = await getTranslations("roll");
+export default async function CookRoute() {
+  const t = await getTranslations("cook");
   return (
     <PageShell title={t("title")} description={t("subtitle")}>
-      <RollPage />
+      <CookPage />
     </PageShell>
   );
 }

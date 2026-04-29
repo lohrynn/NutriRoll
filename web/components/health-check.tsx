@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { apiClient } from "@/lib/api/client";
@@ -39,17 +40,26 @@ export function HealthCheck() {
   return (
     <output
       aria-live="polite"
-      style={{
-        display: "block",
-        padding: "0.75rem 1rem",
-        borderRadius: "0.5rem",
-        border: "1px solid currentColor",
-        opacity: 0.85,
-      }}
+      className="flex items-center gap-2.5 text-sm text-[color:var(--color-muted)]"
     >
-      {status.kind === "loading" && <span>Checking API…</span>}
-      {status.kind === "ok" && <span>API OK — server v{status.version}</span>}
-      {status.kind === "error" && <span>API error: {status.message}</span>}
+      {status.kind === "loading" && (
+        <>
+          <Loader2 aria-hidden size={16} className="animate-spin" />
+          <span>Checking API…</span>
+        </>
+      )}
+      {status.kind === "ok" && (
+        <>
+          <CheckCircle2 aria-hidden size={16} className="text-[color:var(--color-success)]" />
+          <span>API OK · v{status.version}</span>
+        </>
+      )}
+      {status.kind === "error" && (
+        <>
+          <XCircle aria-hidden size={16} className="text-[color:var(--color-danger)]" />
+          <span>API error: {status.message}</span>
+        </>
+      )}
     </output>
   );
 }

@@ -23,7 +23,16 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "a11y": { "recommended": true },
+      "a11y": {
+        "recommended": true,
+        "noLabelWithoutControl": {
+          "level": "error",
+          "options": {
+            "inputComponents": ["Input", "Select", "Textarea"]
+          }
+        },
+        "useSemanticElements": "off"
+      },
       "suspicious": {
         "noExplicitAny": "error"
       },

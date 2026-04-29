@@ -4,9 +4,56 @@
     "tagline": "Roll a cheap, tasty bowl in seconds."
   },
   "nav": {
+    "primary": "Primary",
     "components": "Components",
-    "roll": "Roll a bowl",
-    "recipe": "Recipe"
+    "roll": "Roll",
+    "recipe": "Recipe",
+    "plan": "Plan",
+    "shop": "Shop",
+    "cook": "Cook",
+    "me": "Me",
+    "pantry": "Pantry",
+    "stores": "Stores",
+    "history": "History"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Tonight's bowl",
+      "title": "Roll a balanced bowl in seconds.",
+      "subtitle": "Tap the button. We'll pick a base, a vegetable, a sauce and a topping that play well together — and tell you why.",
+      "cta": "Roll a bowl"
+    },
+    "explore": "Explore",
+    "tiles": {
+      "roll": {
+        "title": "Roll a meal",
+        "description": "Get an instant, balanced bowl with constraints."
+      },
+      "components": {
+        "title": "Components",
+        "description": "Manage bases, vegetables, sauces, toppings."
+      },
+      "pantry": {
+        "title": "Pantry",
+        "description": "What's in your kitchen, what you've got open."
+      },
+      "shop": {
+        "title": "Shopping list",
+        "description": "Turn a bowl into a shopping list with prices."
+      },
+      "stores": {
+        "title": "Stores",
+        "description": "Save supermarkets, pack sizes and prices."
+      },
+      "cook": {
+        "title": "Rate a meal",
+        "description": "Tell us how it went so the next bowl is better."
+      },
+      "history": {
+        "title": "History",
+        "description": "Every meal you rolled, cooked or saved."
+      }
+    }
   },
   "roll": {
     "title": "Roll a bowl",
@@ -123,5 +170,120 @@
       "ml": "ml",
       "pc": "pc"
     }
+  },
+  "pantry": {
+    "title": "Pantry",
+    "subtitle": "Track what you have on hand. Used to surface \"use up\" prompts and to bias rolls.",
+    "loading": "Loading pantry…",
+    "loadError": "Could not load pantry: {message}",
+    "empty": "Your pantry is empty. Add the first item below.",
+    "addNew": "Add item",
+    "form": {
+      "component": "Component",
+      "componentPlaceholder": "Choose a component",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "opened": "Opened",
+      "expires": "Expires (yyyy-mm-dd, optional)",
+      "submit": "Save item",
+      "submitting": "Saving…",
+      "removeFailed": "Could not remove item: {message}",
+      "saveFailed": "Could not save item: {message}"
+    },
+    "row": {
+      "quantity": "{value} {unit}",
+      "opened": "opened",
+      "expires": "expires {date}",
+      "remove": "Remove"
+    }
+  },
+  "stores": {
+    "title": "Stores",
+    "subtitle": "Save supermarkets and the pack sizes & prices you find there. Powers the shopping list math.",
+    "empty": "No stores yet. Add the one you shop at most.",
+    "loading": "Loading stores…",
+    "loadError": "Could not load stores: {message}",
+    "addNew": "Add store",
+    "primary": "Primary",
+    "makePrimary": "Make primary",
+    "form": {
+      "name": "Store name",
+      "namePlaceholder": "e.g. REWE Hauptbahnhof",
+      "location": "Location (optional)",
+      "isPrimary": "Set as primary",
+      "submit": "Save store",
+      "submitting": "Saving…",
+      "saveFailed": "Could not save: {message}"
+    },
+    "prices": {
+      "title": "Prices",
+      "empty": "No prices saved for this store yet.",
+      "addNew": "Add price",
+      "component": "Component",
+      "packSize": "Pack size",
+      "packPrice": "Pack price",
+      "currency": "EUR",
+      "remove": "Remove",
+      "saveFailed": "Could not save price: {message}"
+    },
+    "remove": "Delete store",
+    "removeConfirm": "Delete this store and all its prices?"
+  },
+  "shop": {
+    "title": "Shopping list",
+    "subtitle": "Build a list from your last rolled bowl plus a target portion count.",
+    "noBowl": "Roll a bowl first to build a shopping list.",
+    "goToRoll": "Go to Roll",
+    "store": "Store",
+    "storeMissing": "No stores yet. Add one in {link}.",
+    "storesLink": "Stores",
+    "portions": "Portions",
+    "build": "Build list",
+    "building": "Building…",
+    "totalLine": "Total: {amount} {currency}",
+    "perPortion": "{amount} {currency} / portion",
+    "row": {
+      "needsGrams": "{grams} g needed",
+      "buyPacks": "Buy {packs} × {size} g",
+      "missingPrice": "no price for this component at this store",
+      "lineTotal": "{amount} {currency}"
+    },
+    "error": "Couldn't build list: {message}"
+  },
+  "cook": {
+    "title": "Rate a meal",
+    "subtitle": "Quick rating after every cook so the next roll fits you better.",
+    "noBowl": "No recent bowl found. Roll one first.",
+    "goToRoll": "Go to Roll",
+    "comment": "Notes (optional)",
+    "commentPlaceholder": "What worked? What didn't?",
+    "score": "Overall rating",
+    "componentScores": "Per-component ratings (optional)",
+    "submit": "Save rating",
+    "submitting": "Saving…",
+    "saved": "Saved. Thanks!",
+    "saveFailed": "Couldn't save rating: {message}",
+    "blacklist": "Blacklist this component"
+  },
+  "history": {
+    "title": "History",
+    "subtitle": "Every meal you rolled, cooked, saved or rated.",
+    "empty": "Nothing here yet. Your meals will appear after your first roll.",
+    "loading": "Loading history…",
+    "loadError": "Could not load history: {message}",
+    "kind": {
+      "rolled": "Rolled",
+      "cooked": "Cooked",
+      "rated": "Rated",
+      "saved": "Saved",
+      "discarded": "Discarded"
+    },
+    "rating": "Rating: {value}/5",
+    "components": "Components",
+    "remove": "Delete entry",
+    "filterAll": "All",
+    "filterRolled": "Rolled",
+    "filterCooked": "Cooked",
+    "filterRated": "Rated"
   }
 }

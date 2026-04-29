@@ -1,13 +1,13 @@
 import { getTranslations } from "next-intl/server";
 
+import { HistoryPageView } from "@/components/history-page";
 import { PageShell } from "@/components/page-shell";
-import { RollPage } from "@/components/roll-page";
 
-export default async function RollRoute() {
-  const t = await getTranslations("roll");
+export default async function HistoryRoute() {
+  const t = await getTranslations("history");
   return (
     <PageShell title={t("title")} description={t("subtitle")}>
-      <RollPage />
+      <HistoryPageView />
     </PageShell>
   );
 }

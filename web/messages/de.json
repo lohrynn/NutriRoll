@@ -4,9 +4,56 @@
     "tagline": "In Sekunden eine günstige, leckere Bowl würfeln."
   },
   "nav": {
+    "primary": "Hauptnavigation",
     "components": "Komponenten",
-    "roll": "Schüssel würfeln",
-    "recipe": "Rezept"
+    "roll": "Würfeln",
+    "recipe": "Rezept",
+    "plan": "Plan",
+    "shop": "Shop",
+    "cook": "Kochen",
+    "me": "Ich",
+    "pantry": "Vorrat",
+    "stores": "Märkte",
+    "history": "Verlauf"
+  },
+  "home": {
+    "hero": {
+      "eyebrow": "Heute Abend",
+      "title": "Würfle in Sekunden eine ausgewogene Bowl.",
+      "subtitle": "Tipp den Knopf. Wir wählen Basis, Gemüse, Sauce und Topping, die zusammenpassen — und sagen dir warum.",
+      "cta": "Bowl würfeln"
+    },
+    "explore": "Entdecken",
+    "tiles": {
+      "roll": {
+        "title": "Mahlzeit würfeln",
+        "description": "Sofort eine ausgewogene Bowl mit Filtern."
+      },
+      "components": {
+        "title": "Komponenten",
+        "description": "Verwalte Basen, Gemüse, Saucen, Toppings."
+      },
+      "pantry": {
+        "title": "Vorrat",
+        "description": "Was du zu Hause hast und was geöffnet ist."
+      },
+      "shop": {
+        "title": "Einkaufsliste",
+        "description": "Eine Bowl wird zur Einkaufsliste mit Preisen."
+      },
+      "stores": {
+        "title": "Märkte",
+        "description": "Speichere Supermärkte, Packungsgrößen, Preise."
+      },
+      "cook": {
+        "title": "Mahlzeit bewerten",
+        "description": "Sag uns, wie es war — die nächste Bowl wird besser."
+      },
+      "history": {
+        "title": "Verlauf",
+        "description": "Jede gewürfelte, gekochte oder gespeicherte Mahlzeit."
+      }
+    }
   },
   "roll": {
     "title": "Schüssel würfeln",
@@ -123,5 +170,120 @@
       "ml": "ml",
       "pc": "St."
     }
+  },
+  "pantry": {
+    "title": "Vorrat",
+    "subtitle": "Was du zu Hause hast. Beeinflusst Würfel-Vorschläge und „Aufbrauchen“-Hinweise.",
+    "loading": "Vorrat wird geladen…",
+    "loadError": "Vorrat konnte nicht geladen werden: {message}",
+    "empty": "Dein Vorrat ist leer. Füge unten den ersten Eintrag hinzu.",
+    "addNew": "Eintrag hinzufügen",
+    "form": {
+      "component": "Komponente",
+      "componentPlaceholder": "Komponente wählen",
+      "quantity": "Menge",
+      "unit": "Einheit",
+      "opened": "Geöffnet",
+      "expires": "Haltbar bis (JJJJ-MM-TT, optional)",
+      "submit": "Speichern",
+      "submitting": "Speichern…",
+      "removeFailed": "Eintrag konnte nicht entfernt werden: {message}",
+      "saveFailed": "Eintrag konnte nicht gespeichert werden: {message}"
+    },
+    "row": {
+      "quantity": "{value} {unit}",
+      "opened": "geöffnet",
+      "expires": "haltbar bis {date}",
+      "remove": "Entfernen"
+    }
+  },
+  "stores": {
+    "title": "Märkte",
+    "subtitle": "Speichere Supermärkte mit Packungsgrößen und Preisen. Grundlage der Einkaufsliste.",
+    "empty": "Noch keine Märkte. Füge deinen Lieblingsmarkt hinzu.",
+    "loading": "Märkte werden geladen…",
+    "loadError": "Märkte konnten nicht geladen werden: {message}",
+    "addNew": "Markt hinzufügen",
+    "primary": "Hauptmarkt",
+    "makePrimary": "Als Haupt setzen",
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "z. B. REWE Hauptbahnhof",
+      "location": "Standort (optional)",
+      "isPrimary": "Als Hauptmarkt setzen",
+      "submit": "Markt speichern",
+      "submitting": "Speichern…",
+      "saveFailed": "Speichern fehlgeschlagen: {message}"
+    },
+    "prices": {
+      "title": "Preise",
+      "empty": "Noch keine Preise für diesen Markt.",
+      "addNew": "Preis hinzufügen",
+      "component": "Komponente",
+      "packSize": "Packungsgröße",
+      "packPrice": "Packungspreis",
+      "currency": "EUR",
+      "remove": "Entfernen",
+      "saveFailed": "Preis konnte nicht gespeichert werden: {message}"
+    },
+    "remove": "Markt löschen",
+    "removeConfirm": "Diesen Markt und alle Preise löschen?"
+  },
+  "shop": {
+    "title": "Einkaufsliste",
+    "subtitle": "Erstelle eine Liste aus deiner zuletzt gewürfelten Bowl und einer Portionszahl.",
+    "noBowl": "Würfle zuerst eine Bowl, um eine Einkaufsliste zu erstellen.",
+    "goToRoll": "Zum Würfeln",
+    "store": "Markt",
+    "storeMissing": "Noch keine Märkte. Füge einen in {link} hinzu.",
+    "storesLink": "Märkte",
+    "portions": "Portionen",
+    "build": "Liste erstellen",
+    "building": "Erstelle…",
+    "totalLine": "Gesamt: {amount} {currency}",
+    "perPortion": "{amount} {currency} / Portion",
+    "row": {
+      "needsGrams": "{grams} g benötigt",
+      "buyPacks": "Kaufe {packs} × {size} g",
+      "missingPrice": "kein Preis für diese Komponente in diesem Markt",
+      "lineTotal": "{amount} {currency}"
+    },
+    "error": "Liste konnte nicht erstellt werden: {message}"
+  },
+  "cook": {
+    "title": "Mahlzeit bewerten",
+    "subtitle": "Schnelle Bewertung nach jedem Kochen — die nächste Bowl passt besser zu dir.",
+    "noBowl": "Keine kürzlich gewürfelte Bowl gefunden. Würfle zuerst eine.",
+    "goToRoll": "Zum Würfeln",
+    "comment": "Notizen (optional)",
+    "commentPlaceholder": "Was hat funktioniert? Was nicht?",
+    "score": "Gesamtbewertung",
+    "componentScores": "Bewertung pro Komponente (optional)",
+    "submit": "Bewertung speichern",
+    "submitting": "Speichern…",
+    "saved": "Gespeichert. Danke!",
+    "saveFailed": "Bewertung konnte nicht gespeichert werden: {message}",
+    "blacklist": "Diese Komponente blockieren"
+  },
+  "history": {
+    "title": "Verlauf",
+    "subtitle": "Jede Mahlzeit, die du gewürfelt, gekocht, gespeichert oder bewertet hast.",
+    "empty": "Noch nichts hier. Mahlzeiten erscheinen nach deinem ersten Würfeln.",
+    "loading": "Verlauf wird geladen…",
+    "loadError": "Verlauf konnte nicht geladen werden: {message}",
+    "kind": {
+      "rolled": "Gewürfelt",
+      "cooked": "Gekocht",
+      "rated": "Bewertet",
+      "saved": "Gespeichert",
+      "discarded": "Verworfen"
+    },
+    "rating": "Bewertung: {value}/5",
+    "components": "Komponenten",
+    "remove": "Eintrag löschen",
+    "filterAll": "Alle",
+    "filterRolled": "Gewürfelt",
+    "filterCooked": "Gekocht",
+    "filterRated": "Bewertet"
   }
 }
