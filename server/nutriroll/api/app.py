@@ -8,7 +8,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from nutriroll.api.routers import components, healthz, recipe, roll
+from nutriroll.api.routers import (
+    components,
+    healthz,
+    history,
+    pantry,
+    ratings,
+    recipe,
+    roll,
+    shopping,
+    stores,
+)
 from nutriroll.config import get_settings
 from nutriroll.logging import configure_logging, get_logger
 
@@ -49,6 +59,11 @@ def create_app() -> FastAPI:
     app.include_router(components.router)
     app.include_router(roll.router)
     app.include_router(recipe.router)
+    app.include_router(pantry.router)
+    app.include_router(stores.router)
+    app.include_router(shopping.router)
+    app.include_router(ratings.router)
+    app.include_router(history.router)
 
     return app
 
