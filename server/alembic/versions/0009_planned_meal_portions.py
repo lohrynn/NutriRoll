@@ -1,7 +1,7 @@
 """add portions_total + portions_remaining to planned_meals (Phase 12)
 
 Revision ID: 0009_planned_meal_portions
-Revises: 0008_profile_default_macro_targets
+Revises: 0008_default_macro_targets
 Create Date: 2026-04-29
 
 Phase 12 — meal-prep mode. Tracks how many portions a planned entry was
@@ -19,7 +19,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0009_planned_meal_portions"
-down_revision: str = "0008_profile_default_macro_targets"
+down_revision: str = "0008_default_macro_targets"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

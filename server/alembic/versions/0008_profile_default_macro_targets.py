@@ -1,6 +1,6 @@
 """add default_macro_targets JSONB column to user_profile
 
-Revision ID: 0008_profile_default_macro_targets
+Revision ID: 0008_default_macro_targets
 Revises: 0007_profile_roll_weights
 Create Date: 2026-04-29
 
@@ -19,7 +19,7 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision: str = "0008_profile_default_macro_targets"
+revision: str = "0008_default_macro_targets"
 down_revision: str = "0007_profile_roll_weights"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

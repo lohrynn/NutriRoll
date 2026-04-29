@@ -1,7 +1,7 @@
 """collapse macro columns into JSONB
 
 Revision ID: 0006_components_macros_jsonb
-Revises: 0005_component_seasonal_availability
+Revises: 0005_seasonal_availability
 Create Date: 2026-04-29
 
 Replaces the five flat ``*_per_100g`` Float columns with a single
@@ -19,7 +19,7 @@ from sqlalchemy.dialects import postgresql
 from alembic import op
 
 revision: str = "0006_components_macros_jsonb"
-down_revision: str | None = "0005_component_seasonal_availability"
+down_revision: str | None = "0005_seasonal_availability"
 branch_labels: Sequence[str] | None = None
 depends_on: Sequence[str] | None = None
 

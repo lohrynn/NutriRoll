@@ -1,6 +1,6 @@
 """add seasonal_availability to components
 
-Revision ID: 0005_component_seasonal_availability
+Revision ID: 0005_seasonal_availability
 Revises: 0004_user_profile
 Create Date: 2026-04-29
 
@@ -14,7 +14,7 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "0005_component_seasonal_availability"
+revision: str = "0005_seasonal_availability"
 down_revision: str | None = "0004_user_profile"
 branch_labels: Sequence[str] | None = None
 depends_on: Sequence[str] | None = None
