@@ -51,7 +51,7 @@ export const ALLOWED_METHODS: Readonly<Record<Category, readonly CookingMethod[]
     "no_prep",
     "custom",
   ],
-  topping: ["boil", "toast", "pan_fry", "crumble", "no_prep", "custom"],
+  topping: ["boil", "toast", "pan_fry", "roast", "grill", "crumble", "no_prep", "custom"],
 };
 
 export function parseCsvList(input: string): string[] {

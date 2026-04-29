@@ -106,6 +106,8 @@ ALLOWED_METHODS: dict[Category, frozenset[CookingMethod]] = {
             CookingMethod.BOIL,
             CookingMethod.TOAST,
             CookingMethod.PAN_FRY,
+            CookingMethod.ROAST,
+            CookingMethod.GRILL,
             CookingMethod.CRUMBLE,
             CookingMethod.NO_PREP,
             CookingMethod.CUSTOM,
