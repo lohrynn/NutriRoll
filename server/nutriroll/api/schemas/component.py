@@ -22,7 +22,11 @@ NonEmptyStr = Annotated[str, Field(min_length=1, max_length=200)]
 
 
 class MacrosSchema(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # ``extra="allow"`` lets clients send forward-compat macro fields
+    # (e.g. ``sodium_mg``, ``sugar_g``) that are persisted into the JSONB
+    # column without requiring a domain/ORM/migration round-trip. The five
+    # well-known fields stay first-class for type-safe access.
+    model_config = ConfigDict(extra="allow")
 
     kcal: float = Field(ge=0)
     carbs_g: float = Field(ge=0)
@@ -31,12 +35,20 @@ class MacrosSchema(BaseModel):
     fiber_g: float = Field(ge=0)
 
     def to_domain(self) -> Macros:
+        extras: list[tuple[str, float]] = []
+        for key, raw in (self.model_extra or {}).items():
+            try:
+                value = float(raw)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"extra macro {key!r} must be numeric") from exc
+            extras.append((key, value))
         return Macros(
             kcal=self.kcal,
             carbs_g=self.carbs_g,
             protein_g=self.protein_g,
             fat_g=self.fat_g,
             fiber_g=self.fiber_g,
+            extra=tuple(extras),
         )
 
     @classmethod
@@ -47,6 +59,7 @@ class MacrosSchema(BaseModel):
             protein_g=m.protein_g,
             fat_g=m.fat_g,
             fiber_g=m.fiber_g,
+            **{key: value for key, value in m.extra},
         )
 
 
@@ -104,6 +117,7 @@ class ComponentBase(BaseModel):
     dietary_tags: list[NonEmptyStr] = Field(default_factory=list, max_length=32)
     allergens: list[NonEmptyStr] = Field(default_factory=list, max_length=32)
     shelf_life_days: int | None = Field(default=None, ge=0)
+    seasonal_availability: str | None = Field(default=None, min_length=1, max_length=64)
     blacklisted: bool = False
 
     @field_validator("flavor_tags", "dietary_tags", "allergens")
@@ -153,13 +167,12 @@ class ComponentRead(ComponentBase):
             macros_per_100g=MacrosSchema.from_domain(c.macros_per_100g),
             default_portion=PortionSchema.from_domain(c.default_portion),
             default_cooking_method=c.default_cooking_method,
-            cooking_methods=[
-                CookingMethodSpecSchema.from_domain(s) for s in c.cooking_methods
-            ],
+            cooking_methods=[CookingMethodSpecSchema.from_domain(s) for s in c.cooking_methods],
             flavor_tags=list(c.flavor_tags),
             dietary_tags=list(c.dietary_tags),
             allergens=list(c.allergens),
             shelf_life_days=c.shelf_life_days,
+            seasonal_availability=c.seasonal_availability,
             blacklisted=c.blacklisted,
         )
 

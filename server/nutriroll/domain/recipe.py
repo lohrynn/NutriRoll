@@ -141,9 +141,7 @@ def _block_title(category: Category, components: Sequence[Component]) -> str:
     return f"{label}: {names}"
 
 
-def _solo_block(
-    component: Component, spec: CookingMethodSpec
-) -> RecipeBlock:
+def _solo_block(component: Component, spec: CookingMethodSpec) -> RecipeBlock:
     minutes = spec.approx_minutes or 0
     portion = component.default_portion
     step_text = (
@@ -174,9 +172,7 @@ def _grouped_vegetable_block(
     offset such that they all finish together.
     """
     # Sort longest-first so the slowest one anchors the block.
-    sorted_pairs = sorted(
-        pairs, key=lambda p: p[1].approx_minutes or 0, reverse=True
-    )
+    sorted_pairs = sorted(pairs, key=lambda p: p[1].approx_minutes or 0, reverse=True)
     longest = sorted_pairs[0][1].approx_minutes or 0
     method = sorted_pairs[0][1].method
     components = tuple(p[0] for p in sorted_pairs)
@@ -191,9 +187,7 @@ def _grouped_vegetable_block(
             f"({portion.value:g}{portion.unit.value}) — "
             f"{verb.lower()} for ~{minutes} min."
         )
-        steps.append(
-            RecipeStep(text=text, offset_min=offset, duration_min=minutes or None)
-        )
+        steps.append(RecipeStep(text=text, offset_min=offset, duration_min=minutes or None))
     return RecipeBlock(
         category=Category.VEGETABLE,
         title=_block_title(Category.VEGETABLE, components),

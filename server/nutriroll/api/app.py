@@ -12,6 +12,7 @@ from nutriroll.api.routers import (
     components,
     healthz,
     history,
+    meta,
     pantry,
     planning,
     profile,
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(healthz.router)
+    app.include_router(meta.router)
     app.include_router(components.router)
     app.include_router(roll.router)
     app.include_router(recipe.router)

@@ -57,9 +57,7 @@ def _component_of(
         macros_per_100g=Macros(kcal=100, carbs_g=20, protein_g=4, fat_g=2, fiber_g=2),
         default_portion=Portion(value=80, unit=PortionUnit.GRAM),
         default_cooking_method=method,
-        cooking_methods=(
-            CookingMethodSpec(method=method, approx_minutes=minutes),
-        ),
+        cooking_methods=(CookingMethodSpec(method=method, approx_minutes=minutes),),
         flavor_tags=flavor_tags,
         dietary_tags=dietary_tags,
         allergens=allergens,
@@ -111,12 +109,8 @@ def test_allergen_excluded_components_never_pass(comps: list[Component]) -> None
 
 @given(st.lists(_components(), min_size=1, max_size=15), st.integers(min_value=0, max_value=120))
 @settings(max_examples=50, deadline=None)
-def test_time_budget_eliminates_slow_components(
-    comps: list[Component], budget: int
-) -> None:
-    request = RollRequest(
-        slots=(SlotSpec(category=Category.BASE),), time_budget_min=budget
-    )
+def test_time_budget_eliminates_slow_components(comps: list[Component], budget: int) -> None:
+    request = RollRequest(slots=(SlotSpec(category=Category.BASE),), time_budget_min=budget)
     survivors = filter_candidates(comps, request, Category.BASE)
     for c in survivors:
         fastest = min(
@@ -177,9 +171,7 @@ def test_check_pairing_passes_clean_bowl() -> None:
             reasons=(),
         ),
         ChosenComponent(
-            component=_component_of(
-                Category.TOPPING, name="t", flavor_tags=("crunchy",)
-            ),
+            component=_component_of(Category.TOPPING, name="t", flavor_tags=("crunchy",)),
             score=1.0,
             reasons=(),
         ),
@@ -286,3 +278,33 @@ def test_score_uses_weights() -> None:
     score, contrib = score_component(c, high_novelty)
     assert contrib["novelty"] == 1.0
     assert score == 1.0
+
+
+def test_extra_weights_round_trip_and_validation() -> None:
+    """M6: forward-compat extra weights validate but do not affect scoring yet."""
+    from nutriroll.domain.roll import score_component
+
+    c = _component_of(Category.BASE, name="x", minutes=5)
+    req = RollRequest(
+        slots=(SlotSpec(category=Category.BASE),),
+        weights=FeatureWeights(
+            taste_match=0,
+            novelty=1.0,
+            price_fit=0,
+            nutrition_fit=0,
+            time_fit=0,
+            pantry_bonus=0,
+            extra_weights={"seasonal_bonus": 0.5, "eco_score": 0.25},
+        ),
+    )
+    score, contrib = score_component(c, req)
+    # Extras are accepted but not yet scored — algorithm result is unchanged.
+    assert "seasonal_bonus" not in contrib
+    assert score == 1.0
+
+    with pytest.raises(ValueError, match="must be >= 0"):
+        FeatureWeights(extra_weights={"foo": -1.0})
+    with pytest.raises(ValueError, match="clashes with a well-known field"):
+        FeatureWeights(extra_weights={"novelty": 0.1})
+    with pytest.raises(ValueError, match="non-empty"):
+        FeatureWeights(extra_weights={" ": 0.1})

@@ -52,6 +52,9 @@ export function OnboardingPage() {
     }
     if (typeof window !== "undefined") {
       window.localStorage.setItem("nutriroll.onboarded", "1");
+      // Cookie powers the middleware redirect — value is read but never trusted
+      // for server-side decisions (the profile endpoint remains source of truth).
+      document.cookie = "nutriroll-onboarded=1; path=/; max-age=31536000; samesite=lax";
     }
     router.push("/roll");
   };
@@ -102,7 +105,17 @@ export function OnboardingPage() {
               </li>
             </ul>
             <div className="flex justify-between gap-2 pt-2">
-              <Button type="button" variant="ghost" onClick={() => router.push("/roll")}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  if (typeof document !== "undefined") {
+                    document.cookie =
+                      "nutriroll-onboarded=1; path=/; max-age=31536000; samesite=lax";
+                  }
+                  router.push("/roll");
+                }}
+              >
                 {t("skip")}
               </Button>
               <Button type="button" onClick={() => setStep(1)}>

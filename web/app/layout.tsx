@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import type { ReactNode } from "react";
 
 import { BottomNav } from "@/components/bottom-nav";
+import { ComponentMetaProvider } from "@/lib/components/meta";
 
 import "./globals.css";
 
@@ -40,8 +41,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {children}
-          <BottomNav />
+          <ComponentMetaProvider>
+            {children}
+            <BottomNav />
+          </ComponentMetaProvider>
         </NextIntlClientProvider>
       </body>
     </html>

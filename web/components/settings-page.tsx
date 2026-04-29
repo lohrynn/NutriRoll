@@ -2,32 +2,32 @@
 
 import { Download, Monitor, Moon, RotateCcw, Save, Sun } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
+import type { ComponentRead } from "@/lib/components/types";
 import {
   COMMON_ALLERGENS,
   DIETARY_MODES,
   type DietaryMode,
   type UserProfileRead,
 } from "@/lib/profile/types";
+import {
+  DEFAULT_WEIGHTS,
+  WEIGHT_KEYS,
+  type WeightKey,
+  clearWeights,
+  loadWeights,
+  saveWeights,
+} from "@/lib/settings/weights";
 
 type ThemeMode = "system" | "light" | "dark";
 
 const THEME_KEY = "nutriroll.theme";
-
-const ALGO_WEIGHTS: Array<{ key: string; value: number }> = [
-  { key: "price", value: 0.2 },
-  { key: "nutrition", value: 0.2 },
-  { key: "novelty", value: 0.15 },
-  { key: "directionMatch", value: 0.25 },
-  { key: "rating", value: 0.2 },
-];
 
 function readTheme(): ThemeMode {
   if (typeof window === "undefined") return "system";
@@ -60,9 +60,26 @@ export function SettingsPage() {
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [weights, setWeights] = useState<Record<WeightKey, number>>(() => ({
+    ...DEFAULT_WEIGHTS,
+  }));
+  const [blacklisted, setBlacklisted] = useState<ComponentRead[]>([]);
+  const [blacklistLoading, setBlacklistLoading] = useState<boolean>(true);
+
+  const loadBlacklist = useCallback(async () => {
+    setBlacklistLoading(true);
+    const result = await apiClient.GET("/v1/components", {
+      params: { query: { include_blacklisted: true, limit: 1000, offset: 0 } },
+    });
+    if (result.data) {
+      setBlacklisted(result.data.items.filter((c) => c.blacklisted));
+    }
+    setBlacklistLoading(false);
+  }, []);
 
   useEffect(() => {
     setTheme(readTheme());
+    void loadBlacklist();
     let cancelled = false;
     void (async () => {
       const result = await apiClient.GET("/v1/me/profile");
@@ -73,11 +90,80 @@ export function SettingsPage() {
       setAllergens(new Set(p.allergens));
       setTimeBudget(p.default_time_budget_min?.toString() ?? "");
       setGoal(p.goal);
+      // Seed weights from profile if present; fall back to localStorage.
+      const profileWeights = p.roll_weights ?? {};
+      const merged = { ...loadWeights(), ...profileWeights } as Record<WeightKey, number>;
+      setWeights({ ...DEFAULT_WEIGHTS, ...merged });
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadBlacklist]);
+
+  const updateWeight = (key: WeightKey, value: number) => {
+    const next = { ...weights, [key]: value };
+    setWeights(next);
+    saveWeights(next); // keep localStorage in sync for offline / roll page
+    if (profile) {
+      // Fire-and-forget persist to profile — ignore transient failures.
+      void apiClient.PUT("/v1/me/profile", {
+        body: {
+          dietary_mode: dietaryMode,
+          allergens: [...allergens],
+          default_time_budget_min:
+            timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
+          goal: goal.trim(),
+          locale: profile.locale,
+          onboarded: profile.onboarded || true,
+          roll_weights: next,
+        },
+      });
+    }
+  };
+
+  const resetWeights = () => {
+    clearWeights();
+    setWeights({ ...DEFAULT_WEIGHTS });
+    if (profile) {
+      void apiClient.PUT("/v1/me/profile", {
+        body: {
+          dietary_mode: dietaryMode,
+          allergens: [...allergens],
+          default_time_budget_min:
+            timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
+          goal: goal.trim(),
+          locale: profile.locale,
+          onboarded: profile.onboarded || true,
+          roll_weights: {},
+        },
+      });
+    }
+  };
+
+  const restoreFromBlacklist = async (component: ComponentRead) => {
+    // Component endpoints are PUT-replace, not PATCH — rebuild full payload.
+    const result = await apiClient.PUT("/v1/components/{component_id}", {
+      params: { path: { component_id: component.id } },
+      body: {
+        category: component.category,
+        name: component.name,
+        image_url: component.image_url ?? null,
+        default_portion: component.default_portion,
+        macros_per_100g: component.macros_per_100g,
+        default_cooking_method: component.default_cooking_method,
+        cooking_methods: component.cooking_methods,
+        flavor_tags: component.flavor_tags ?? [],
+        dietary_tags: component.dietary_tags ?? [],
+        allergens: component.allergens ?? [],
+        shelf_life_days: component.shelf_life_days ?? null,
+        seasonal_availability: component.seasonal_availability ?? null,
+        blacklisted: false,
+      },
+    });
+    if (result.data) {
+      setBlacklisted((prev) => prev.filter((c) => c.id !== component.id));
+    }
+  };
 
   const onThemeChange = (next: ThemeMode) => {
     setTheme(next);
@@ -112,6 +198,7 @@ export function SettingsPage() {
         goal: goal.trim(),
         locale: profile.locale,
         onboarded: profile.onboarded || true,
+        roll_weights: weights,
       },
     });
     setSaving(false);
@@ -280,20 +367,76 @@ export function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Recommendations (read-only) */}
+      {/* Recommendations */}
       <Card>
         <CardHeader>
           <CardTitle>{t("recommendations.title")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
           <p className="text-sm text-[color:var(--color-muted)]">{t("recommendations.body")}</p>
-          <div className="flex flex-wrap gap-2">
-            {ALGO_WEIGHTS.map((w) => (
-              <Badge key={w.key} variant="neutral">
-                {t(`recommendations.weights.${w.key}`)}: {w.value.toFixed(2)}
-              </Badge>
+          <div className="grid gap-3">
+            {WEIGHT_KEYS.map((key) => (
+              <label key={key} className="grid gap-1.5 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{t(`recommendations.weights.${key}`)}</span>
+                  <span className="tabular-nums text-xs text-[color:var(--color-muted)]">
+                    {weights[key].toFixed(2)}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={weights[key]}
+                  onChange={(e) => updateWeight(key, Number.parseFloat(e.target.value))}
+                  className="w-full"
+                />
+              </label>
             ))}
           </div>
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" size="sm" onClick={resetWeights}>
+              {t("recommendations.reset")}
+              <RotateCcw aria-hidden size={14} />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Blacklist */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("blacklist.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <p className="text-sm text-[color:var(--color-muted)]">{t("blacklist.body")}</p>
+          {blacklistLoading ? (
+            <output aria-live="polite" className="text-sm text-[color:var(--color-muted)]">
+              {t("blacklist.loading")}
+            </output>
+          ) : blacklisted.length === 0 ? (
+            <p className="text-sm text-[color:var(--color-muted)]">{t("blacklist.empty")}</p>
+          ) : (
+            <ul className="grid gap-2">
+              {blacklisted.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-2"
+                >
+                  <span className="text-sm">{c.name}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void restoreFromBlacklist(c)}
+                  >
+                    {t("blacklist.restore")}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 

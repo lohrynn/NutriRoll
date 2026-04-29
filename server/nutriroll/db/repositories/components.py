@@ -39,13 +39,7 @@ def _row_to_domain(row: ComponentRow) -> Component:
         id=row.id,
         category=Category(row.category),
         name=row.name,
-        macros_per_100g=Macros(
-            kcal=row.kcal_per_100g,
-            carbs_g=row.carbs_per_100g,
-            protein_g=row.protein_per_100g,
-            fat_g=row.fat_per_100g,
-            fiber_g=row.fiber_per_100g,
-        ),
+        macros_per_100g=Macros.from_mapping(dict(row.macros)),
         default_portion=Portion(
             value=row.default_portion_value,
             unit=PortionUnit(row.default_portion_unit),
@@ -57,6 +51,7 @@ def _row_to_domain(row: ComponentRow) -> Component:
         allergens=tuple(row.allergens),
         image_url=row.image_url,
         shelf_life_days=row.shelf_life_days,
+        seasonal_availability=row.seasonal_availability,
         blacklisted=row.blacklisted,
     )
 
@@ -69,11 +64,7 @@ def _domain_to_columns(component: Component) -> dict[str, Any]:
         "image_url": component.image_url,
         "default_portion_value": component.default_portion.value,
         "default_portion_unit": component.default_portion.unit.value,
-        "kcal_per_100g": component.macros_per_100g.kcal,
-        "carbs_per_100g": component.macros_per_100g.carbs_g,
-        "protein_per_100g": component.macros_per_100g.protein_g,
-        "fat_per_100g": component.macros_per_100g.fat_g,
-        "fiber_per_100g": component.macros_per_100g.fiber_g,
+        "macros": component.macros_per_100g.as_dict(),
         "default_cooking_method": component.default_cooking_method.value,
         "cooking_methods": [
             {
@@ -88,6 +79,7 @@ def _domain_to_columns(component: Component) -> dict[str, Any]:
         "dietary_tags": list(component.dietary_tags),
         "allergens": list(component.allergens),
         "shelf_life_days": component.shelf_life_days,
+        "seasonal_availability": component.seasonal_availability,
         "blacklisted": component.blacklisted,
     }
 

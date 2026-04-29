@@ -86,6 +86,9 @@
     "cookNow": "Jetzt kochen",
     "saveBowl": "Speichern",
     "planToday": "Heute planen",
+    "planSlot": "Mahlzeit",
+    "forceBaseMethod": "Zubereitungsmethode erzwingen",
+    "forceBaseMethodAny": "Beliebig",
     "savePrompt": "Wie soll diese Bowl heißen?",
     "error": "Konnte keine Schüssel würfeln: {message}",
     "dietary": {
@@ -138,7 +141,12 @@
     "blocks": "Kochblöcke",
     "totalMinutes": "Gesamtzeit: ~{minutes} Min.",
     "minutes": "~{minutes} Min.",
-    "error": "Konnte kein Rezept erstellen: {message}"
+    "error": "Konnte kein Rezept erstellen: {message}",
+    "timer": {
+      "start": "Timer starten",
+      "pause": "Timer pausieren",
+      "reset": "Timer zurücksetzen"
+    }
   },
   "components": {
     "title": "Komponenten",
@@ -157,7 +165,11 @@
     "row": {
       "blacklisted": "blockiert",
       "kcal": "{value} kcal/100g",
-      "portion": "Portion: {value} {unit}"
+      "portion": "Portion: {value} {unit}",
+      "edit": "Bearbeiten",
+      "delete": "L\u00f6schen",
+      "confirmDelete": "Wirklich l\u00f6schen?",
+      "cancelDelete": "Abbrechen"
     },
     "form": {
       "name": "Name",
@@ -183,6 +195,7 @@
       "blacklisted": "Blockiert",
       "submit": "Komponente speichern",
       "submitting": "Speichern…",
+      "cancel": "Abbrechen",
       "addMethod": "Zubereitung hinzufügen",
       "removeMethod": "Entfernen",
       "errors": {
@@ -231,6 +244,7 @@
     "loadError": "Vorrat konnte nicht geladen werden: {message}",
     "empty": "Dein Vorrat ist leer. Füge unten den ersten Eintrag hinzu.",
     "addNew": "Eintrag hinzufügen",
+    "expiryAlert": "{count, plural, one {# Eintrag läuft} other {# Einträge laufen}} innerhalb von {days} Tagen ab. Der Würfel bevorzugt sie.",
     "form": {
       "component": "Komponente",
       "componentPlaceholder": "Komponente wählen",
@@ -240,6 +254,8 @@
       "expires": "Haltbar bis (JJJJ-MM-TT, optional)",
       "submit": "Speichern",
       "submitting": "Speichern…",
+      "saveEdit": "Änderungen speichern",
+      "cancelEdit": "Abbrechen",
       "removeFailed": "Eintrag konnte nicht entfernt werden: {message}",
       "saveFailed": "Eintrag konnte nicht gespeichert werden: {message}"
     },
@@ -247,6 +263,9 @@
       "quantity": "{value} {unit}",
       "opened": "geöffnet",
       "expires": "haltbar bis {date}",
+      "expiringSoon": "läuft in {days, plural, one {# Tag} other {# Tagen}} ab",
+      "expired": "abgelaufen",
+      "edit": "Bearbeiten",
       "remove": "Entfernen"
     }
   },
@@ -288,7 +307,7 @@
     "noBowl": "Würfle zuerst eine Bowl, um eine Einkaufsliste zu erstellen.",
     "goToRoll": "Zum Würfeln",
     "store": "Markt",
-    "storeMissing": "Noch keine Märkte. Füge einen in {link} hinzu.",
+    "storeMissing": "Noch keine Märkte. Füge einen in <link>Märkte</link> hinzu.",
     "storesLink": "Märkte",
     "portions": "Portionen",
     "build": "Liste erstellen",
@@ -362,6 +381,9 @@
     "count": "{count, plural, =0 {leer} one {# Mahlzeit} other {# Mahlzeiten}}",
     "cook": "Kochen",
     "markCooked": "Als gekocht",
+    "markShopped": "Als eingekauft",
+    "markSkipped": "Überspringen",
+    "changeSlot": "Mahlzeit verschieben",
     "undo": "Rückgängig",
     "delete": "Geplante Mahlzeit löschen",
     "hint": "Würfle eine Bowl und tippe „Heute planen“, um sie deiner Woche hinzuzufügen.",
@@ -439,14 +461,24 @@
     },
     "recommendations": {
       "title": "Empfehlungen",
-      "body": "Standardgewichte des Roll-Algorithmus. Anpassung folgt.",
+      "body": "Stelle ein, wie der Roll-Algorithmus Komponenten bewertet. Wird lokal auf diesem Gerät gespeichert.",
+      "reset": "Auf Standard zurücksetzen",
       "weights": {
-        "price": "Preis",
-        "nutrition": "Nährwerte",
+        "taste_match": "Geschmack",
         "novelty": "Neuheit",
-        "directionMatch": "Richtung",
-        "rating": "Bewertung"
+        "price_fit": "Preis",
+        "nutrition_fit": "Nährwerte",
+        "time_fit": "Zeit",
+        "pantry_bonus": "Vorratskammer",
+        "direction_match": "Richtung"
       }
+    },
+    "blacklist": {
+      "title": "Gesperrte Komponenten",
+      "body": "Komponenten, die du vom Würfeln ausgeschlossen hast. Stelle sie wieder her, um sie zurückzuholen.",
+      "empty": "Nichts gesperrt.",
+      "loading": "Lädt…",
+      "restore": "Wiederherstellen"
     },
     "data": {
       "title": "Daten",

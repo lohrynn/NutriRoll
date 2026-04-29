@@ -1,6 +1,6 @@
 "use client";
 
-import { Boxes, Plus, Trash2 } from "lucide-react";
+import { Boxes, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -10,8 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
+import { useExpiryWarningDays } from "@/lib/components/meta";
 import type { ComponentRead, PortionUnit } from "@/lib/components/types";
 import { PORTION_UNITS } from "@/lib/components/types";
+import { daysUntilExpiry, isExpiringSoon } from "@/lib/pantry/freshness";
 import type { PantryItemRead } from "@/lib/pantry/types";
 
 type Status =
@@ -35,6 +37,16 @@ const INITIAL_DRAFT: DraftItem = {
   expiresAt: "",
 };
 
+function fromItem(item: PantryItemRead): DraftItem {
+  return {
+    componentId: item.component_id,
+    quantity: String(item.quantity),
+    unit: item.unit,
+    opened: item.opened,
+    expiresAt: item.expires_at ?? "",
+  };
+}
+
 export function PantryPage() {
   const t = useTranslations("pantry");
   const tForm = useTranslations("pantry.form");
@@ -46,6 +58,10 @@ export function PantryPage() {
   const [draft, setDraft] = useState<DraftItem>(INITIAL_DRAFT);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<DraftItem>(INITIAL_DRAFT);
+  const [editError, setEditError] = useState<string | null>(null);
+  const expiryWarningDays = useExpiryWarningDays();
 
   const componentsById = useMemo(() => new Map(components.map((c) => [c.id, c])), [components]);
 
@@ -119,6 +135,48 @@ export function PantryPage() {
     [draft, tForm],
   );
 
+  const startEdit = useCallback((item: PantryItemRead) => {
+    setEditingId(item.id);
+    setEditDraft(fromItem(item));
+    setEditError(null);
+  }, []);
+
+  const cancelEdit = useCallback(() => {
+    setEditingId(null);
+    setEditError(null);
+  }, []);
+
+  const saveEdit = useCallback(
+    async (item: PantryItemRead) => {
+      const quantity = Number(editDraft.quantity);
+      if (!editDraft.componentId || !Number.isFinite(quantity) || quantity < 0) {
+        setEditError(tForm("saveFailed", { message: "invalid input" }));
+        return;
+      }
+      const { data, error, response } = await apiClient.PUT("/v1/pantry/{item_id}", {
+        params: { path: { item_id: item.id } },
+        body: {
+          component_id: editDraft.componentId,
+          quantity,
+          unit: editDraft.unit,
+          opened: editDraft.opened,
+          expires_at: editDraft.expiresAt || null,
+        },
+      });
+      if (error || !data) {
+        setEditError(tForm("saveFailed", { message: `HTTP ${response.status}` }));
+        return;
+      }
+      setStatus((prev) =>
+        prev.kind === "ok"
+          ? { kind: "ok", items: prev.items.map((i) => (i.id === item.id ? data : i)) }
+          : prev,
+      );
+      setEditingId(null);
+    },
+    [editDraft, tForm],
+  );
+
   const handleRemove = useCallback(
     async (id: string) => {
       try {
@@ -143,8 +201,20 @@ export function PantryPage() {
     [tForm],
   );
 
+  const expiringCount = useMemo(() => {
+    if (status.kind !== "ok") return 0;
+    return status.items.filter((i) => isExpiringSoon(i.expires_at, expiryWarningDays)).length;
+  }, [status, expiryWarningDays]);
+
   return (
     <div className="grid gap-4">
+      {expiringCount > 0 && (
+        <Card className="border-[color:var(--color-warning)]/40 bg-[color:var(--color-warning)]/10">
+          <CardContent className="text-sm">
+            {t("expiryAlert", { count: expiringCount, days: expiryWarningDays })}
+          </CardContent>
+        </Card>
+      )}
       {status.kind === "loading" && (
         <Card>
           <CardContent>
@@ -175,6 +245,9 @@ export function PantryPage() {
         <div className="grid gap-3">
           {status.items.map((item) => {
             const component = componentsById.get(item.component_id);
+            const expiringSoon = isExpiringSoon(item.expires_at, expiryWarningDays);
+            const remainingDays = daysUntilExpiry(item.expires_at);
+            const isEditing = editingId === item.id;
             return (
               <Card key={item.id}>
                 <CardContent className="flex items-start gap-3">
@@ -184,30 +257,127 @@ export function PantryPage() {
                   <div className="grid flex-1 gap-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium">{component?.name ?? item.component_id}</p>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => void handleRemove(item.id)}
-                        aria-label={tRow("remove")}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </Button>
+                      <div className="flex gap-1">
+                        {!isEditing && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => startEdit(item)}
+                            aria-label={tRow("edit")}
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => void handleRemove(item.id)}
+                          aria-label={tRow("remove")}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="brand">
-                        {tRow("quantity", {
-                          value: item.quantity,
-                          unit: tUnit(item.unit),
-                        })}
-                      </Badge>
-                      {item.opened && <Badge>{tRow("opened")}</Badge>}
-                      {item.expires_at && (
-                        <Badge variant="warning">
-                          {tRow("expires", { date: item.expires_at })}
+                    {!isEditing && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="brand">
+                          {tRow("quantity", {
+                            value: item.quantity,
+                            unit: tUnit(item.unit),
+                          })}
                         </Badge>
-                      )}
-                    </div>
+                        {item.opened && <Badge>{tRow("opened")}</Badge>}
+                        {item.expires_at && !expiringSoon && (
+                          <Badge variant="warning">
+                            {tRow("expires", { date: item.expires_at })}
+                          </Badge>
+                        )}
+                        {item.expires_at && expiringSoon && (
+                          <Badge variant="danger">
+                            {remainingDays !== null && remainingDays < 0
+                              ? tRow("expired")
+                              : tRow("expiringSoon", {
+                                  days: remainingDays ?? expiryWarningDays,
+                                })}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    {isEditing && (
+                      <div className="grid gap-2">
+                        <div className="grid grid-cols-[1fr_auto] gap-2">
+                          <label className="grid gap-1 text-sm">
+                            <span>{tForm("quantity")}</span>
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              step="any"
+                              min="0"
+                              value={editDraft.quantity}
+                              onChange={(e) =>
+                                setEditDraft((d) => ({ ...d, quantity: e.target.value }))
+                              }
+                            />
+                          </label>
+                          <label className="grid gap-1 text-sm">
+                            <span>{tForm("unit")}</span>
+                            <Select
+                              value={editDraft.unit}
+                              onChange={(e) =>
+                                setEditDraft((d) => ({
+                                  ...d,
+                                  unit: e.target.value as PortionUnit,
+                                }))
+                              }
+                            >
+                              {PORTION_UNITS.map((u) => (
+                                <option key={u} value={u}>
+                                  {tUnit(u)}
+                                </option>
+                              ))}
+                            </Select>
+                          </label>
+                        </div>
+                        <label className="grid gap-1 text-sm">
+                          <span>{tForm("expires")}</span>
+                          <Input
+                            type="date"
+                            value={editDraft.expiresAt}
+                            onChange={(e) =>
+                              setEditDraft((d) => ({ ...d, expiresAt: e.target.value }))
+                            }
+                          />
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={editDraft.opened}
+                            onChange={(e) =>
+                              setEditDraft((d) => ({ ...d, opened: e.target.checked }))
+                            }
+                          />
+                          <span>{tForm("opened")}</span>
+                        </label>
+                        {editError && (
+                          <output
+                            aria-live="polite"
+                            className="text-sm text-[color:var(--color-danger)]"
+                          >
+                            {editError}
+                          </output>
+                        )}
+                        <div className="flex gap-2">
+                          <Button type="button" size="sm" onClick={() => void saveEdit(item)}>
+                            {tForm("saveEdit")}
+                          </Button>
+                          <Button type="button" size="sm" variant="outline" onClick={cancelEdit}>
+                            {tForm("cancelEdit")}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

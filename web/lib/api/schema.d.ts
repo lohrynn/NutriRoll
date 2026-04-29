@@ -111,6 +111,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/meta/components": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Component vocabulary (categories, portion units, allowed methods, balanced targets) */
+        get: operations["get_component_meta_v1_meta_components_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/pantry": {
         parameters: {
             query?: never;
@@ -436,6 +453,8 @@ export interface components {
             macros_per_100g: components["schemas"]["MacrosSchema"];
             /** Name */
             name: string;
+            /** Seasonal Availability */
+            seasonal_availability?: string | null;
             /** Shelf Life Days */
             shelf_life_days?: number | null;
         };
@@ -445,6 +464,29 @@ export interface components {
             items: components["schemas"]["ComponentRead"][];
             /** Total */
             total: number;
+        };
+        /** ComponentMeta */
+        ComponentMeta: {
+            /** Allowed Methods */
+            allowed_methods: {
+                [key: string]: components["schemas"]["CookingMethod"][];
+            };
+            /** Balanced Targets */
+            balanced_targets: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
+            /** Categories */
+            categories: components["schemas"]["Category"][];
+            /** Category Labels */
+            category_labels: {
+                [key: string]: string;
+            };
+            /** Expiry Warning Days */
+            expiry_warning_days: number;
+            /** Portion Units */
+            portion_units: components["schemas"]["PortionUnit"][];
         };
         /** ComponentRead */
         ComponentRead: {
@@ -474,6 +516,8 @@ export interface components {
             macros_per_100g: components["schemas"]["MacrosSchema"];
             /** Name */
             name: string;
+            /** Seasonal Availability */
+            seasonal_availability?: string | null;
             /** Shelf Life Days */
             shelf_life_days?: number | null;
         };
@@ -540,6 +584,8 @@ export interface components {
              * @default 0.1
              */
             time_fit: number;
+        } & {
+            [key: string]: unknown;
         };
         /** FlavorAxesSchema */
         FlavorAxesSchema: {
@@ -617,6 +663,8 @@ export interface components {
             kcal: number;
             /** Protein G */
             protein_g: number;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * MealSlot
@@ -1053,6 +1101,10 @@ export interface components {
             locale: string;
             /** Onboarded */
             onboarded: boolean;
+            /** Roll Weights */
+            roll_weights: {
+                [key: string]: number;
+            };
         };
         /** UserProfileUpdate */
         UserProfileUpdate: {
@@ -1081,6 +1133,10 @@ export interface components {
              * @default false
              */
             onboarded: boolean;
+            /** Roll Weights */
+            roll_weights?: {
+                [key: string]: number;
+            };
         };
         /** ValidationError */
         ValidationError: {
@@ -1429,6 +1485,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_component_meta_v1_meta_components_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComponentMeta"];
                 };
             };
         };

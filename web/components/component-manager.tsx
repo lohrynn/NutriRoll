@@ -1,5 +1,6 @@
 "use client";
 
+import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -8,14 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
-import { CATEGORIES, type Category, type ComponentRead } from "@/lib/components/types";
+import { useCategories } from "@/lib/components/meta";
+import type { Category, ComponentRead } from "@/lib/components/types";
 
 type Status =
   | { kind: "loading" }
   | { kind: "ok"; items: ComponentRead[] }
   | { kind: "error"; message: string };
-
-const FILTER_OPTIONS: readonly (Category | "all")[] = ["all", ...CATEGORIES];
 
 export function ComponentManager() {
   const t = useTranslations("components");
@@ -25,6 +25,13 @@ export function ComponentManager() {
 
   const [status, setStatus] = useState<Status>({ kind: "loading" });
   const [filter, setFilter] = useState<Category | "all">("all");
+  const [editing, setEditing] = useState<ComponentRead | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const categories = useCategories();
+  const filterOptions = useMemo<readonly (Category | "all")[]>(
+    () => ["all", ...categories],
+    [categories],
+  );
 
   const load = useCallback(async () => {
     setStatus({ kind: "loading" });
@@ -59,6 +66,25 @@ export function ComponentManager() {
     );
   }, []);
 
+  const handleUpdated = useCallback((updated: ComponentRead) => {
+    setEditing(null);
+    setStatus((prev) =>
+      prev.kind === "ok"
+        ? { kind: "ok", items: prev.items.map((i) => (i.id === updated.id ? updated : i)) }
+        : prev,
+    );
+  }, []);
+
+  const handleDelete = useCallback(async (id: string) => {
+    setConfirmDeleteId(null);
+    await apiClient.DELETE("/v1/components/{component_id}", {
+      params: { path: { component_id: id } },
+    });
+    setStatus((prev) =>
+      prev.kind === "ok" ? { kind: "ok", items: prev.items.filter((i) => i.id !== id) } : prev,
+    );
+  }, []);
+
   const items = useMemo(() => (status.kind === "ok" ? status.items : []), [status]);
 
   return (
@@ -73,7 +99,7 @@ export function ComponentManager() {
             value={filter}
             onChange={(e) => setFilter(e.target.value as Category | "all")}
           >
-            {FILTER_OPTIONS.map((opt) => (
+            {filterOptions.map((opt) => (
               <option key={opt} value={opt}>
                 {tFilter(opt)}
               </option>
@@ -107,10 +133,55 @@ export function ComponentManager() {
               <li key={c.id}>
                 <Card>
                   <CardContent className="grid gap-1 p-4">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      <strong className="font-semibold">{c.name}</strong>
-                      <Badge variant="brand">{tCategory(c.category)}</Badge>
-                      {c.blacklisted && <Badge variant="danger">{tRow("blacklisted")}</Badge>}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <strong className="font-semibold">{c.name}</strong>
+                        <Badge variant="brand">{tCategory(c.category)}</Badge>
+                        {c.blacklisted && <Badge variant="danger">{tRow("blacklisted")}</Badge>}
+                      </div>
+                      {confirmDeleteId === c.id ? (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(c.id)}
+                            className="rounded border border-[color:var(--color-danger)]/60 px-2 py-1 text-xs text-[color:var(--color-danger)]"
+                          >
+                            {tRow("confirmDelete")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="rounded border border-current/30 px-2 py-1 text-xs"
+                          >
+                            {tRow("cancelDelete")}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            aria-label={tRow("edit")}
+                            onClick={() => {
+                              setEditing(c);
+                              setConfirmDeleteId(null);
+                            }}
+                            className="rounded border border-current/30 px-2 py-1 text-xs"
+                          >
+                            <Pencil aria-hidden size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={tRow("delete")}
+                            onClick={() => {
+                              setConfirmDeleteId(c.id);
+                              setEditing(null);
+                            }}
+                            className="rounded border border-current/30 px-2 py-1 text-xs text-[color:var(--color-danger)]"
+                          >
+                            <Trash2 aria-hidden size={12} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="text-xs text-[color:var(--color-muted)]">
                       {tRow("kcal", { value: c.macros_per_100g.kcal })} ·{" "}
@@ -120,6 +191,17 @@ export function ComponentManager() {
                       })}
                     </div>
                   </CardContent>
+                  {editing?.id === c.id && (
+                    <CardContent className="border-t border-[color:var(--color-border)] pt-4">
+                      <ComponentForm
+                        key={c.id}
+                        editId={c.id}
+                        initialValues={editing}
+                        onUpdated={handleUpdated}
+                        onCancel={() => setEditing(null)}
+                      />
+                    </CardContent>
+                  )}
                 </Card>
               </li>
             ))}

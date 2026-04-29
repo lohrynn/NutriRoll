@@ -22,3 +22,6 @@ class UserProfileRow(Base):
     goal: Mapped[str] = mapped_column(String(256), nullable=False, default="")
     locale: Mapped[str] = mapped_column(String(8), nullable=False, default="en")
     onboarded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    roll_weights: Mapped[dict[Any, Any] | None] = mapped_column(JSON, nullable=True, default=None)
+    """JSON map of weight name → float. NULL = user hasn't set custom weights.
+    Stored as JSONB on Postgres (see migration 0007); JSON here for SQLite test compat."""

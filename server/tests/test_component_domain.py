@@ -20,9 +20,7 @@ def _make(**overrides: object) -> Component:
         "id": uuid4(),
         "category": Category.BASE,
         "name": "Brown rice",
-        "macros_per_100g": Macros(
-            kcal=123.0, carbs_g=25.0, protein_g=2.5, fat_g=1.0, fiber_g=1.8
-        ),
+        "macros_per_100g": Macros(kcal=123.0, carbs_g=25.0, protein_g=2.5, fat_g=1.0, fiber_g=1.8),
         "default_portion": Portion(value=80.0, unit=PortionUnit.GRAM),
         "default_cooking_method": CookingMethod.BOIL,
         "cooking_methods": (
@@ -57,9 +55,7 @@ def test_method_must_be_allowed_for_category() -> None:
         _make(
             category=Category.SAUCE,
             default_cooking_method=CookingMethod.BOIL,
-            cooking_methods=(
-                CookingMethodSpec(method=CookingMethod.BOIL, approx_minutes=10),
-            ),
+            cooking_methods=(CookingMethodSpec(method=CookingMethod.BOIL, approx_minutes=10),),
         )
 
 

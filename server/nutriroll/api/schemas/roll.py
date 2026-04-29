@@ -36,8 +36,25 @@ class SlotSpecSchema(BaseModel):
     count: Annotated[int, Field(ge=0, le=8)] = 1
 
 
+def _collect_extra_weights(weights: FeatureWeightsSchema) -> dict[str, float]:
+    """Coerce `model_extra` into a numeric dict for ``FeatureWeights.extra_weights``."""
+    out: dict[str, float] = {}
+    for key, raw in (weights.model_extra or {}).items():
+        try:
+            out[key] = float(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"extra weight {key!r} must be numeric") from exc
+    return out
+
+
 class FeatureWeightsSchema(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # ``extra="allow"`` lets clients send forward-compat scoring weights
+    # (e.g. ``seasonal_bonus``, ``eco_score``) ahead of the algorithm gaining
+    # a feature for them. Unknown keys flow through to
+    # ``FeatureWeights.extra_weights`` and are silently ignored by
+    # ``score_component()`` until a matching feature lands. See
+    # modularity-audit M6.
+    model_config = ConfigDict(extra="allow")
 
     taste_match: float = Field(default=0.30, ge=0)
     novelty: float = Field(default=0.20, ge=0)
@@ -104,9 +121,7 @@ class RollRequestSchema(BaseModel):
         for tag, boost in self.tag_boosts.items():
             boosts[tag] = boosts.get(tag, 0.0) + boost
         return RollRequest(
-            slots=tuple(
-                SlotSpec(category=s.category, count=s.count) for s in self.slots
-            ),
+            slots=tuple(SlotSpec(category=s.category, count=s.count) for s in self.slots),
             dietary_mode=self.dietary_mode,
             allergens_excluded=frozenset(self.allergens_excluded),
             blacklisted_ids=frozenset(self.blacklisted_ids),
@@ -121,6 +136,7 @@ class RollRequestSchema(BaseModel):
                 time_fit=self.weights.time_fit,
                 pantry_bonus=self.weights.pantry_bonus,
                 direction_match=self.weights.direction_match,
+                extra_weights=_collect_extra_weights(self.weights),
             ),
             tag_boosts=boosts,
             temperature=self.temperature,

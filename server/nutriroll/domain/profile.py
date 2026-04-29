@@ -29,6 +29,14 @@ class UserProfile:
 
     onboarded: bool = False
 
+    roll_weights: tuple[tuple[str, float], ...] = ()
+    """Per-user overrides for the roll scoring weights. Stored as a tuple of
+    (name, value) pairs so the frozen dataclass can hash it. Empty = use defaults
+    from :class:`~nutriroll.domain.roll.FeatureWeights`.
+    Keys must be non-empty and non-negative; any key not matching a known
+    `FeatureWeights` field is stored in `extra_weights` (forward-compat).
+    """
+
     def __post_init__(self) -> None:
         if self.dietary_mode not in ("", "vegan", "vegetarian", "pescatarian"):
             raise ValueError(f"unknown dietary_mode: {self.dietary_mode!r}")
@@ -37,3 +45,8 @@ class UserProfile:
         for a in self.allergens:
             if not a or not a.strip():
                 raise ValueError("allergens must be non-empty strings")
+        for key, value in self.roll_weights:
+            if not key or not key.strip():
+                raise ValueError("roll_weights keys must be non-empty strings")
+            if value < 0:
+                raise ValueError(f"roll_weights[{key!r}] must be >= 0")

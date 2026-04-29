@@ -223,3 +223,55 @@ async def test_reroll_slot_returns_single_slot(client: AsyncClient) -> None:
 async def test_roll_validates_request_body(client: AsyncClient) -> None:
     response = await client.post("/v1/roll", json={"slots": []})
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_roll_pantry_bonus_surfaces_expiring_components(client: AsyncClient) -> None:
+    """Components in pantry with near expiry should consistently win the slot."""
+    await _seed_pool(client)
+    # Add an extra base so the pool actually contains a choice.
+    extra_base = {
+        **_base_payload(),
+        "name": "Quinoa",
+    }
+    response = await client.post("/v1/components", json=extra_base)
+    assert response.status_code == 201
+
+    base_list = await client.get("/v1/components", params={"category": "base"})
+    assert base_list.status_code == 200
+    bases = base_list.json()["items"]
+    target = next(b for b in bases if b["name"] == "Quinoa")
+    target_id: str = target["id"]
+
+    # Mark target as expiring tomorrow.
+    from datetime import date, timedelta
+
+    expires = (date.today() + timedelta(days=1)).isoformat()
+    pantry_post = await client.post(
+        "/v1/pantry",
+        json={
+            "component_id": target_id,
+            "quantity": 100.0,
+            "unit": "g",
+            "opened": False,
+            "expires_at": expires,
+        },
+    )
+    assert pantry_post.status_code == 201
+
+    # Roll many times with high pantry weight; expiring item should dominate.
+    hits = 0
+    for seed in range(10):
+        response = await client.post(
+            "/v1/roll",
+            json={
+                "slots": [{"category": "base", "count": 1}],
+                "weights": {"pantry_bonus": 0.95},
+                "temperature": 0.1,
+                "seed": seed,
+            },
+        )
+        assert response.status_code == 200
+        if response.json()["slots"][0]["component"]["id"] == target_id:
+            hits += 1
+    assert hits >= 8, f"expected pantry-expiring item to dominate, hit {hits}/10"

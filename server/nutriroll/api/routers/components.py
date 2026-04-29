@@ -36,6 +36,7 @@ def _to_domain(payload: ComponentCreate, *, component_id: UUID) -> Component:
         allergens=tuple(payload.allergens),
         image_url=payload.image_url,
         shelf_life_days=payload.shelf_life_days,
+        seasonal_availability=payload.seasonal_availability,
         blacklisted=payload.blacklisted,
     )
 

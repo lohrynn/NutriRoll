@@ -14,8 +14,10 @@ import math
 import random
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
+from typing import ClassVar
 from uuid import UUID
 
+from nutriroll.domain.category_meta import BALANCED_TARGETS
 from nutriroll.domain.component import Category, Component, CookingMethod
 
 # ---------------------------------------------------------------------------
@@ -37,7 +39,16 @@ class SlotSpec:
 
 @dataclass(frozen=True, slots=True)
 class FeatureWeights:
-    """Vision §Logic 2 Step B. Weights are non-negative."""
+    """Vision §Logic 2 Step B. Weights are non-negative.
+
+    The seven well-known weights map 1:1 to the features computed by
+    ``score_component()``. ``extra_weights`` is a forward-compat bucket
+    for new scoring signals (e.g. ``seasonal_bonus``, ``eco_score``)
+    that can be persisted and round-tripped through the API before the
+    algorithm gains a feature for them — see modularity-audit M6.
+    Unknown keys are silently ignored by ``score_component()`` until a
+    matching feature lands.
+    """
 
     taste_match: float = 0.30
     novelty: float = 0.20
@@ -46,20 +57,33 @@ class FeatureWeights:
     time_fit: float = 0.10
     pantry_bonus: float = 0.05
     direction_match: float = 0.25
+    extra_weights: Mapping[str, float] = field(default_factory=dict[str, float])
+
+    WELL_KNOWN_KEYS: ClassVar[tuple[str, ...]] = (
+        "taste_match",
+        "novelty",
+        "price_fit",
+        "nutrition_fit",
+        "time_fit",
+        "pantry_bonus",
+        "direction_match",
+    )
 
     def __post_init__(self) -> None:
-        for label in (
-            "taste_match",
-            "novelty",
-            "price_fit",
-            "nutrition_fit",
-            "time_fit",
-            "pantry_bonus",
-            "direction_match",
-        ):
+        for label in self.WELL_KNOWN_KEYS:
             v: float = getattr(self, label)
             if v < 0:
                 raise ValueError(f"weight {label} must be >= 0, got {v}")
+        for key, value in self.extra_weights.items():
+            if not key or not key.strip():
+                raise ValueError("extra_weights keys must be non-empty")
+            if key in self.WELL_KNOWN_KEYS:
+                raise ValueError(
+                    f"extra_weights {key!r} clashes with a well-known field; "
+                    "set it as a regular argument instead"
+                )
+            if value < 0:
+                raise ValueError(f"extra_weights[{key!r}] must be >= 0, got {value}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +99,12 @@ class RollRequest:
     recent_component_ids: frozenset[UUID] = field(default_factory=frozenset[UUID])
     weights: FeatureWeights = field(default_factory=FeatureWeights)
     tag_boosts: Mapping[str, float] = field(default_factory=dict[str, float])
+    # IDs of components currently in the user's pantry. Boosts ``pantry_bonus``.
+    pantry_component_ids: frozenset[UUID] = field(default_factory=frozenset[UUID])
+    # Subset of ``pantry_component_ids`` that are about to expire (within
+    # ``EXPIRY_WARNING_DAYS`` server-side). Receives a stronger boost so the
+    # roller surfaces ingredients the user should use up.
+    expiring_component_ids: frozenset[UUID] = field(default_factory=frozenset[UUID])
     temperature: float = 0.5
     seed: int | None = None
 
@@ -87,9 +117,9 @@ class RollRequest:
             if not tag.strip():
                 raise ValueError("tag_boosts keys must be non-empty")
             if boost < -1.0 or boost > 1.0:
-                raise ValueError(
-                    f"tag_boosts[{tag!r}] must be in [-1, 1], got {boost}"
-                )
+                raise ValueError(f"tag_boosts[{tag!r}] must be in [-1, 1], got {boost}")
+        if not self.expiring_component_ids.issubset(self.pantry_component_ids):
+            raise ValueError("expiring_component_ids must be a subset of pantry_component_ids")
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,9 +183,7 @@ def _passes_time_budget(component: Component, budget_min: int | None) -> bool:
     return False
 
 
-def _passes_forced_method(
-    component: Component, forced: CookingMethod | None
-) -> bool:
+def _passes_forced_method(component: Component, forced: CookingMethod | None) -> bool:
     if forced is None:
         return True
     return any(spec.method == forced for spec in component.cooking_methods)
@@ -192,24 +220,16 @@ def filter_candidates(
 # Step B — scoring
 # ---------------------------------------------------------------------------
 
-# A "balanced" bowl per category roughly looks like this for nutrition_fit:
-# values are kcal/100g and macro-density rough targets.
-_BALANCED_TARGETS: dict[Category, dict[str, float]] = {
-    Category.BASE: {"kcal": 130.0, "carbs_g": 25.0, "protein_g": 4.0, "fat_g": 1.5},
-    Category.VEGETABLE: {"kcal": 35.0, "carbs_g": 7.0, "protein_g": 2.0, "fat_g": 0.4},
-    Category.SAUCE: {"kcal": 120.0, "carbs_g": 8.0, "protein_g": 2.0, "fat_g": 9.0},
-    Category.TOPPING: {"kcal": 200.0, "carbs_g": 10.0, "protein_g": 12.0, "fat_g": 12.0},
-}
-
 
 def _nutrition_fit(component: Component) -> float:
-    target = _BALANCED_TARGETS[component.category]
+    target = BALANCED_TARGETS[component.category]
     macros = component.macros_per_100g
     actual = {
         "kcal": macros.kcal,
         "carbs_g": macros.carbs_g,
         "protein_g": macros.protein_g,
         "fat_g": macros.fat_g,
+        "fiber_g": macros.fiber_g,
     }
     # L1 distance, normalised against target sum, clipped to [0, 1].
     denom = sum(target.values()) or 1.0
@@ -261,16 +281,21 @@ def score_component(
     f_time = _time_fit(component, request.time_budget_min)
     f_novelty = _novelty(component, request.recent_component_ids)
     f_direction = _direction_match(component, request.tag_boosts)
-    # taste_match / price_fit / pantry_bonus require profile data we don't
-    # have in v1 — treat as neutral 0.5 so weights still influence ordering
-    # if the user dials them up.
+    # taste_match / price_fit require profile data we don't have in v1 —
+    # treat as neutral 0.5 so weights still influence ordering if dialed up.
+    if component.id in request.expiring_component_ids:
+        f_pantry = 1.0
+    elif component.id in request.pantry_component_ids:
+        f_pantry = 0.5
+    else:
+        f_pantry = 0.0
     contributions = {
         "nutrition_fit": w.nutrition_fit * f_nutrition,
         "time_fit": w.time_fit * f_time,
         "novelty": w.novelty * f_novelty,
         "taste_match": w.taste_match * 0.5,
         "price_fit": w.price_fit * 0.5,
-        "pantry_bonus": w.pantry_bonus * 0.0,
+        "pantry_bonus": w.pantry_bonus * f_pantry,
         "direction_match": w.direction_match * f_direction,
     }
     return sum(contributions.values()), contributions
@@ -341,7 +366,10 @@ def _top_reasons(
         elif name == "price_fit":
             out.append("fits your per-portion budget")
         elif name == "pantry_bonus":
-            out.append("already in your pantry")
+            if component.id in request.expiring_component_ids:
+                out.append("about to expire in your pantry — use it up")
+            else:
+                out.append("already in your pantry")
         elif name == "direction_match":
             matched = sorted(
                 tag
@@ -444,16 +472,10 @@ def roll(
         target = chosen_per_slot[lowest_idx]
         pool = filter_candidates(components_list, request, target.component.category)
         already_picked = {c.component.id for c in chosen_per_slot}
-        scored = [
-            (c, *score_component(c, request))
-            for c in pool
-            if c.id not in already_picked
-        ]
+        scored = [(c, *score_component(c, request)) for c in pool if c.id not in already_picked]
         if not scored:
             break
-        picked = _softmax_sample(
-            rng, [(c, s) for c, s, _ in scored], request.temperature
-        )
+        picked = _softmax_sample(rng, [(c, s) for c, s, _ in scored], request.temperature)
         picked_score, contributions = next(
             (s, contrib) for c, s, contrib in scored if c.id == picked.id
         )

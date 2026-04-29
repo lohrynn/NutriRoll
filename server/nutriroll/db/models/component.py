@@ -15,9 +15,10 @@ from nutriroll.db.base import Base
 class ComponentRow(Base):
     """Persistence row for a Component.
 
-    Cross-database friendly: arrays and the cooking-methods spec are stored as
-    JSON (works on Postgres JSONB and SQLite JSON1). SQLAlchemy's `Uuid` type
-    handles native UUIDs on Postgres and CHAR(32) on SQLite transparently.
+    Cross-database friendly: arrays, the cooking-methods spec, and the
+    macros payload are stored as JSON (works on Postgres JSONB and SQLite
+    JSON1). SQLAlchemy's `Uuid` type handles native UUIDs on Postgres and
+    CHAR(32) on SQLite transparently.
     """
 
     __tablename__ = "components"
@@ -30,11 +31,7 @@ class ComponentRow(Base):
     default_portion_value: Mapped[float] = mapped_column(Float, nullable=False)
     default_portion_unit: Mapped[str] = mapped_column(String(8), nullable=False)
 
-    kcal_per_100g: Mapped[float] = mapped_column(Float, nullable=False)
-    carbs_per_100g: Mapped[float] = mapped_column(Float, nullable=False)
-    protein_per_100g: Mapped[float] = mapped_column(Float, nullable=False)
-    fat_per_100g: Mapped[float] = mapped_column(Float, nullable=False)
-    fiber_per_100g: Mapped[float] = mapped_column(Float, nullable=False)
+    macros: Mapped[dict[str, float]] = mapped_column(JSON, nullable=False, default=dict)
 
     default_cooking_method: Mapped[str] = mapped_column(String(32), nullable=False)
     cooking_methods: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
@@ -44,6 +41,7 @@ class ComponentRow(Base):
     allergens: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
     shelf_life_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    seasonal_availability: Mapped[str | None] = mapped_column(String(64), nullable=True)
     blacklisted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     created_at: Mapped[datetime] = mapped_column(

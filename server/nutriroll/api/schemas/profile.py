@@ -20,6 +20,8 @@ class UserProfileRead(BaseModel):
     goal: str
     locale: str
     onboarded: bool
+    roll_weights: dict[str, float]
+    """Per-user scoring weight overrides. Empty dict = use server defaults."""
 
     @classmethod
     def from_domain(cls, p: UserProfile) -> UserProfileRead:
@@ -30,6 +32,7 @@ class UserProfileRead(BaseModel):
             goal=p.goal,
             locale=p.locale,
             onboarded=p.onboarded,
+            roll_weights=dict(p.roll_weights),
         )
 
 
@@ -42,6 +45,8 @@ class UserProfileUpdate(BaseModel):
     goal: str = Field(default="", max_length=256)
     locale: str = Field(default="en", max_length=8)
     onboarded: bool = False
+    roll_weights: dict[str, float] = Field(default_factory=dict)
+    """Per-user scoring weight overrides sent from the Settings UI."""
 
     def to_domain(self) -> UserProfile:
         return UserProfile(
@@ -51,6 +56,7 @@ class UserProfileUpdate(BaseModel):
             goal=self.goal,
             locale=self.locale,
             onboarded=self.onboarded,
+            roll_weights=tuple(self.roll_weights.items()),
         )
 
 

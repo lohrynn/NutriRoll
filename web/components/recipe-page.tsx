@@ -1,11 +1,12 @@
 "use client";
 
-import { Clock, Flame, Salad, Sparkles, Utensils } from "lucide-react";
+import { Clock, Flame, Pause, Play, RotateCcw, Salad, Sparkles, Utensils } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import type { Category } from "@/lib/components/types";
@@ -36,6 +37,136 @@ function readBowlFromStorage(): RolledBowl | null {
   } catch {
     return null;
   }
+}
+
+function formatMmSs(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const mm = String(Math.floor(safe / 60)).padStart(2, "0");
+  const ss = String(safe % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
+}
+
+/**
+ * Plays a short beep without bundling an audio asset. Falls back to a
+ * no-op if the browser blocks AudioContext (e.g. iOS without prior gesture).
+ */
+function playDoneTone(): void {
+  if (typeof window === "undefined") return;
+  const Ctor =
+    window.AudioContext ??
+    (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctor) return;
+  try {
+    const ctx = new Ctor();
+    const oscillator = ctx.createOscillator();
+    const gain = ctx.createGain();
+    oscillator.type = "sine";
+    oscillator.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.55);
+    oscillator.connect(gain).connect(ctx.destination);
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.6);
+    oscillator.onended = () => {
+      void ctx.close();
+    };
+  } catch {
+    // ignore — autoplay policy
+  }
+}
+
+interface BlockTimerProps {
+  totalMinutes: number;
+}
+
+function BlockTimer({ totalMinutes }: BlockTimerProps) {
+  const t = useTranslations("recipe.timer");
+  const totalSeconds = Math.max(0, Math.floor(totalMinutes * 60));
+  const [remaining, setRemaining] = useState<number>(totalSeconds);
+  const [running, setRunning] = useState<boolean>(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const firedRef = useRef<boolean>(false);
+
+  const stop = useCallback(() => {
+    if (intervalRef.current !== null) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setRunning(false);
+  }, []);
+
+  useEffect(() => {
+    if (!running) return;
+    intervalRef.current = setInterval(() => {
+      setRemaining((prev) => {
+        if (prev <= 1) {
+          if (!firedRef.current) {
+            firedRef.current = true;
+            playDoneTone();
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (intervalRef.current !== null) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [running]);
+
+  useEffect(() => {
+    if (remaining === 0 && running) {
+      stop();
+    }
+  }, [remaining, running, stop]);
+
+  const reset = () => {
+    stop();
+    firedRef.current = false;
+    setRemaining(totalSeconds);
+  };
+
+  if (totalSeconds === 0) return null;
+
+  const done = remaining === 0;
+
+  return (
+    <div className="flex items-center gap-2">
+      <output
+        aria-live="polite"
+        className={`tabular-nums text-sm font-semibold ${
+          done ? "text-[color:var(--color-danger)]" : "text-[color:var(--color-fg)]"
+        }`}
+      >
+        {formatMmSs(remaining)}
+      </output>
+      {!running && !done && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          aria-label={t("start")}
+          onClick={() => setRunning(true)}
+        >
+          <Play aria-hidden size={14} />
+        </Button>
+      )}
+      {running && (
+        <Button type="button" size="icon" variant="ghost" aria-label={t("pause")} onClick={stop}>
+          <Pause aria-hidden size={14} />
+        </Button>
+      )}
+      {(done || remaining < totalSeconds) && (
+        <Button type="button" size="icon" variant="ghost" aria-label={t("reset")} onClick={reset}>
+          <RotateCcw aria-hidden size={14} />
+        </Button>
+      )}
+    </div>
+  );
 }
 
 export function RecipePage() {
@@ -151,8 +282,11 @@ export function RecipePage() {
                             </div>
                           </div>
                         </div>
-                        <span className="shrink-0 rounded-full bg-[color:var(--color-surface-2)] px-2.5 py-1 text-xs font-medium tabular-nums">
-                          {t("minutes", { minutes: block.total_minutes })}
+                        <span className="flex shrink-0 items-center gap-2">
+                          <span className="rounded-full bg-[color:var(--color-surface-2)] px-2.5 py-1 text-xs font-medium tabular-nums">
+                            {t("minutes", { minutes: block.total_minutes })}
+                          </span>
+                          <BlockTimer totalMinutes={block.total_minutes} />
                         </span>
                       </div>
                       {block.steps.length > 0 && (

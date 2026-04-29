@@ -11,9 +11,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
+import { useAllowedMethods } from "@/lib/components/meta";
 import type { Category, CookingMethod } from "@/lib/components/types";
+import { MEAL_SLOTS, type MealSlot } from "@/lib/planning/types";
 import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
 import { DEFAULT_SLOTS, type RolledBowl, type RolledSlot } from "@/lib/roll/types";
+import { loadWeightsForRoll } from "@/lib/settings/weights";
 
 type Status =
   | { kind: "idle" }
@@ -85,11 +88,34 @@ export function RollPage() {
   const tDirection = useTranslations("roll.direction");
   const tNutrition = useTranslations("roll.nutrition");
   const tCategory = useTranslations("components.category");
+  const tMethod = useTranslations("components.method");
+  const tPlanSlot = useTranslations("plan.slot");
   const router = useRouter();
 
   const [controls, setControls] = useState<RollControls>(INITIAL_CONTROLS);
   const [direction, setDirection] = useState<DirectionState>(INITIAL_DIRECTION);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [planSlot, setPlanSlot] = useState<MealSlot>("dinner");
+  const baseMethods = useAllowedMethods("base");
+
+  // Restore last rolled bowl from sessionStorage after hydration (back-navigation support).
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(ROLLED_BOWL_STORAGE_KEY);
+      if (raw) setStatus({ kind: "ok", bowl: JSON.parse(raw) as RolledBowl });
+    } catch {
+      // ignore corrupt data
+    }
+  }, []);
+
+  // Persist bowl to sessionStorage whenever it changes so back-navigation restores it.
+  useEffect(() => {
+    if (status.kind === "ok") {
+      window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(status.bowl));
+    }
+  }, [status]);
 
   // Prefill dietary preferences + allergens from the user profile, but only
   // on first mount and only if the user hasn't typed anything yet.
@@ -130,6 +156,7 @@ export function RollPage() {
     }
     // Surprise me bumps softmax temperature to flatten the distribution.
     const surpriseBump = direction.moods.has("surprise_me") ? 0.5 : 0;
+    const customWeights = loadWeightsForRoll();
     return {
       slots: [...DEFAULT_SLOTS],
       time_budget_min: controls.timeBudgetMin === "" ? null : Number(controls.timeBudgetMin),
@@ -144,6 +171,7 @@ export function RollPage() {
           heavy_to_light: direction.heavyToLight,
         },
       },
+      ...(customWeights ? { weights: customWeights } : {}),
       temperature: 0.5 + surpriseBump,
     };
   }, [controls, direction]);
@@ -219,9 +247,7 @@ export function RollPage() {
 
   const goCook = useCallback(() => {
     if (status.kind !== "ok") return;
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(status.bowl));
-    }
+    // sessionStorage is already up-to-date via the status useEffect
     void apiClient.POST("/v1/history", {
       body: {
         kind: "cooked",
@@ -238,17 +264,20 @@ export function RollPage() {
     router.push("/recipe");
   }, [router, status]);
 
-  const saveBowl = useCallback(async () => {
+  const saveBowl = useCallback(() => {
     if (status.kind !== "ok") return;
     const fallbackName =
       status.bowl.slots
         .slice(0, 2)
         .map((s) => s.component.name)
         .join(" + ") || "Bowl";
-    const name =
-      typeof window !== "undefined"
-        ? (window.prompt(t("savePrompt"), fallbackName) ?? "").trim()
-        : "";
+    setSaveName(fallbackName);
+    setSaveOpen(true);
+  }, [status]);
+
+  const confirmSave = useCallback(async () => {
+    if (status.kind !== "ok") return;
+    const name = saveName.trim();
     if (!name) return;
     await apiClient.POST("/v1/saved", {
       body: {
@@ -257,7 +286,8 @@ export function RollPage() {
         notes: "",
       },
     });
-  }, [status, t]);
+    setSaveOpen(false);
+  }, [status, saveName]);
 
   const planBowl = useCallback(async () => {
     if (status.kind !== "ok") return;
@@ -266,14 +296,14 @@ export function RollPage() {
     await apiClient.POST("/v1/planned", {
       body: {
         planned_for: iso,
-        slot: "dinner",
+        slot: planSlot,
         bowl_snapshot: status.bowl as unknown as Record<string, unknown>,
         status: "planned",
         notes: "",
       },
     });
     router.push("/plan");
-  }, [router, status]);
+  }, [router, status, planSlot]);
 
   return (
     <div className="grid gap-4">
@@ -320,6 +350,26 @@ export function RollPage() {
                 onChange={(e) => setControls((c) => ({ ...c, allergensCsv: e.target.value }))}
                 placeholder={t("allergensPlaceholder")}
               />
+            </label>
+            <label className="grid gap-1.5 text-sm sm:col-span-2">
+              <span className="font-medium">{t("forceBaseMethod")}</span>
+              <Select
+                value={controls.forceBaseMethod}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setControls((c) => ({
+                    ...c,
+                    forceBaseMethod: v === "" ? "" : (v as CookingMethod),
+                  }));
+                }}
+              >
+                <option value="">{t("forceBaseMethodAny")}</option>
+                {baseMethods.map((m) => (
+                  <option key={m} value={m}>
+                    {tMethod(m)}
+                  </option>
+                ))}
+              </Select>
             </label>
           </div>
         </CardContent>
@@ -455,12 +505,58 @@ export function RollPage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold tracking-tight">{t("results")}</h2>
             <div className="flex flex-wrap gap-2">
-              <Button type="button" size="sm" variant="outline" onClick={() => void saveBowl()}>
-                {t("saveBowl")}
-              </Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => void planBowl()}>
-                {t("planToday")}
-              </Button>
+              {saveOpen ? (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    autoFocus
+                    size={24}
+                    value={saveName}
+                    onChange={(e) => setSaveName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") void confirmSave();
+                      if (e.key === "Escape") setSaveOpen(false);
+                    }}
+                    className="h-8 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void confirmSave()}
+                    disabled={!saveName.trim()}
+                  >
+                    {t("saveBowl")}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSaveOpen(false)}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" size="sm" variant="outline" onClick={() => saveBowl()}>
+                  {t("saveBowl")}
+                </Button>
+              )}
+              <div className="flex items-center gap-1">
+                <Select
+                  aria-label={t("planSlot")}
+                  value={planSlot}
+                  onChange={(e) => setPlanSlot(e.target.value as MealSlot)}
+                  className="h-8 text-sm"
+                >
+                  {MEAL_SLOTS.map((s) => (
+                    <option key={s} value={s}>
+                      {tPlanSlot(s)}
+                    </option>
+                  ))}
+                </Select>
+                <Button type="button" size="sm" variant="outline" onClick={() => void planBowl()}>
+                  {t("planToday")}
+                </Button>
+              </div>
               <Button type="button" size="sm" onClick={goCook}>
                 <ChefHat aria-hidden size={14} strokeWidth={2.4} />
                 {t("cookNow")}

@@ -26,9 +26,7 @@ SEED_DIR = REPO_ROOT / "data" / "seed"
 @pytest_asyncio.fixture
 async def patch_sessionmaker(monkeypatch: pytest.MonkeyPatch):
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
-    sessionmaker = async_sessionmaker(
-        bind=engine, expire_on_commit=False, class_=AsyncSession
-    )
+    sessionmaker = async_sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -90,8 +88,6 @@ async def test_upsert_is_idempotent_with_force(patch_sessionmaker: None) -> None
         SEED_DIR / "components.csv", SEED_DIR / "cooking_methods.csv"
     )
     first_inserted, _ = await seed_module.upsert_components(components, force=False)
-    second_inserted, second_skipped = await seed_module.upsert_components(
-        components, force=True
-    )
+    second_inserted, second_skipped = await seed_module.upsert_components(components, force=True)
     assert second_inserted == 0
     assert second_skipped == first_inserted

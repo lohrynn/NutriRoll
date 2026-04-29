@@ -1,15 +1,21 @@
 "use client";
 
 import { Calendar, ChefHat, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
-import type { MealSlot, PlannedMealRead, PlannedStatus } from "@/lib/planning/types";
+import {
+  MEAL_SLOTS,
+  type MealSlot,
+  type PlannedMealRead,
+  type PlannedStatus,
+} from "@/lib/planning/types";
 import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
 import type { RolledBowl } from "@/lib/roll/types";
 
@@ -52,6 +58,7 @@ export function PlanPage() {
   const t = useTranslations("plan");
   const tSlot = useTranslations("plan.slot");
   const tStatus = useTranslations("plan.status");
+  const locale = useLocale();
   const router = useRouter();
 
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
@@ -99,6 +106,14 @@ export function PlanPage() {
     await load();
   };
 
+  const setSlotOf = async (id: string, slot: MealSlot) => {
+    await apiClient.PATCH("/v1/planned/{meal_id}", {
+      params: { path: { meal_id: id } },
+      body: { slot },
+    });
+    await load();
+  };
+
   const remove = async (id: string) => {
     await apiClient.DELETE("/v1/planned/{meal_id}", {
       params: { path: { meal_id: id } },
@@ -132,7 +147,7 @@ export function PlanPage() {
           </Button>
           <span className="inline-flex items-center gap-2 text-sm font-medium">
             <Calendar aria-hidden size={14} className="text-[color:var(--color-brand)]" />
-            {firstDay.toLocaleDateString()} – {lastDay.toLocaleDateString()}
+            {firstDay.toLocaleDateString(locale)} – {lastDay.toLocaleDateString(locale)}
           </span>
           <Button
             type="button"
@@ -169,7 +184,7 @@ export function PlanPage() {
               <CardContent className="grid gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-semibold leading-tight">
-                    {day.toLocaleDateString(undefined, {
+                    {day.toLocaleDateString(locale, {
                       weekday: "long",
                       month: "short",
                       day: "numeric",
@@ -190,16 +205,27 @@ export function PlanPage() {
                   return (
                     <div
                       key={meal.id}
-                      className="grid gap-1 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-3"
+                      className="grid gap-2 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-3"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="brand">{tSlot(meal.slot as MealSlot)}</Badge>
+                          <Select
+                            aria-label={t("changeSlot")}
+                            value={meal.slot}
+                            onChange={(e) => void setSlotOf(meal.id, e.target.value as MealSlot)}
+                            className="text-xs"
+                          >
+                            {MEAL_SLOTS.map((slot) => (
+                              <option key={slot} value={slot}>
+                                {tSlot(slot)}
+                              </option>
+                            ))}
+                          </Select>
                           <Badge variant={STATUS_VARIANT[meal.status as PlannedStatus]}>
                             {tStatus(meal.status as PlannedStatus)}
                           </Badge>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           <Button
                             type="button"
                             size="sm"
@@ -222,6 +248,26 @@ export function PlanPage() {
                           >
                             {meal.status === "cooked" ? t("undo") : t("markCooked")}
                           </Button>
+                          {meal.status !== "shopped" && meal.status !== "cooked" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void setStatusOf(meal.id, "shopped")}
+                            >
+                              {t("markShopped")}
+                            </Button>
+                          )}
+                          {meal.status !== "skipped" && meal.status !== "cooked" && (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void setStatusOf(meal.id, "skipped")}
+                            >
+                              {t("markSkipped")}
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             size="sm"

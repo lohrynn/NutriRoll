@@ -143,9 +143,7 @@ async def test_update_replaces_fields(client: AsyncClient) -> None:
         name="Brown rice (long grain)",
         flavor_tags=["nutty", "earthy"],
     )
-    response = await client.put(
-        f"/v1/components/{component_id}", json=updated_payload
-    )
+    response = await client.put(f"/v1/components/{component_id}", json=updated_payload)
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["name"] == "Brown rice (long grain)"

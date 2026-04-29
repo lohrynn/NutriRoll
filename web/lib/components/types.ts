@@ -6,53 +6,19 @@ export type PortionUnit = openapi["schemas"]["PortionUnit"];
 export type ComponentRead = openapi["schemas"]["ComponentRead"];
 export type ComponentCreate = openapi["schemas"]["ComponentCreate"];
 export type CookingMethodSpec = openapi["schemas"]["CookingMethodSpecSchema"];
+export type Macros = openapi["schemas"]["MacrosSchema"];
 
-export const CATEGORIES: readonly Category[] = ["base", "vegetable", "sauce", "topping"];
+/**
+ * Well-known macro keys mirrored from the backend ``Macros.WELL_KNOWN_KEYS``.
+ * The on-the-wire payload is open: clients may send additional numeric fields
+ * (the backend persists them in the JSONB column). The form renders one input
+ * per key in this array — adding a new well-known macro means appending here
+ * plus an i18n key in ``messages/{en,de}.json#components.form.<key>``.
+ */
+export type MacroKey = "kcal" | "carbs_g" | "protein_g" | "fat_g" | "fiber_g";
+export const MACRO_KEYS: readonly MacroKey[] = ["kcal", "carbs_g", "protein_g", "fat_g", "fiber_g"];
 
 export const PORTION_UNITS: readonly PortionUnit[] = ["g", "ml", "pc"];
-
-export const ALLOWED_METHODS: Readonly<Record<Category, readonly CookingMethod[]>> = {
-  base: [
-    "boil",
-    "steam",
-    "blanch",
-    "pan_fry",
-    "roast",
-    "air_fry",
-    "grill",
-    "bake",
-    "toast",
-    "raw",
-    "no_prep",
-    "custom",
-  ],
-  vegetable: [
-    "boil",
-    "steam",
-    "blanch",
-    "pan_fry",
-    "roast",
-    "air_fry",
-    "grill",
-    "bake",
-    "toast",
-    "raw",
-    "no_prep",
-    "custom",
-  ],
-  sauce: [
-    "blend_cold",
-    "blend_hot",
-    "heat",
-    "whisk_cold",
-    "whisk_hot",
-    "reduce",
-    "saute_simmer",
-    "no_prep",
-    "custom",
-  ],
-  topping: ["boil", "toast", "pan_fry", "roast", "grill", "crumble", "no_prep", "custom"],
-};
 
 export function parseCsvList(input: string): string[] {
   return input

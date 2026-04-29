@@ -86,6 +86,9 @@
     "cookNow": "Cook now",
     "saveBowl": "Save",
     "planToday": "Plan today",
+    "planSlot": "Meal slot",
+    "forceBaseMethod": "Force base method",
+    "forceBaseMethodAny": "Any method",
     "savePrompt": "Name this saved meal:",
     "error": "Couldn't roll a bowl: {message}",
     "dietary": {
@@ -138,7 +141,12 @@
     "blocks": "Cooking blocks",
     "totalMinutes": "Total time: ~{minutes} min.",
     "minutes": "~{minutes} min",
-    "error": "Couldn't build recipe: {message}"
+    "error": "Couldn't build recipe: {message}",
+    "timer": {
+      "start": "Start timer",
+      "pause": "Pause timer",
+      "reset": "Reset timer"
+    }
   },
   "components": {
     "title": "Components",
@@ -157,7 +165,11 @@
     "row": {
       "blacklisted": "blacklisted",
       "kcal": "{value} kcal/100g",
-      "portion": "Portion: {value} {unit}"
+      "portion": "Portion: {value} {unit}",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Confirm delete",
+      "cancelDelete": "Cancel"
     },
     "form": {
       "name": "Name",
@@ -183,6 +195,7 @@
       "blacklisted": "Blacklisted",
       "submit": "Save component",
       "submitting": "Saving…",
+      "cancel": "Cancel",
       "addMethod": "Add cooking method",
       "removeMethod": "Remove",
       "errors": {
@@ -231,6 +244,7 @@
     "loadError": "Could not load pantry: {message}",
     "empty": "Your pantry is empty. Add the first item below.",
     "addNew": "Add item",
+    "expiryAlert": "{count, plural, one {# item is} other {# items are}} expiring within {days} days. The roller will favour them.",
     "form": {
       "component": "Component",
       "componentPlaceholder": "Choose a component",
@@ -240,6 +254,8 @@
       "expires": "Expires (yyyy-mm-dd, optional)",
       "submit": "Save item",
       "submitting": "Saving…",
+      "saveEdit": "Save changes",
+      "cancelEdit": "Cancel",
       "removeFailed": "Could not remove item: {message}",
       "saveFailed": "Could not save item: {message}"
     },
@@ -247,6 +263,9 @@
       "quantity": "{value} {unit}",
       "opened": "opened",
       "expires": "expires {date}",
+      "expiringSoon": "expires in {days, plural, one {# day} other {# days}}",
+      "expired": "expired",
+      "edit": "Edit",
       "remove": "Remove"
     }
   },
@@ -288,7 +307,7 @@
     "noBowl": "Roll a bowl first to build a shopping list.",
     "goToRoll": "Go to Roll",
     "store": "Store",
-    "storeMissing": "No stores yet. Add one in {link}.",
+    "storeMissing": "No stores yet. Add one in <link>Stores</link>.",
     "storesLink": "Stores",
     "portions": "Portions",
     "build": "Build list",
@@ -362,6 +381,9 @@
     "count": "{count, plural, =0 {empty} one {# meal} other {# meals}}",
     "cook": "Cook",
     "markCooked": "Mark cooked",
+    "markShopped": "Mark shopped",
+    "markSkipped": "Skip",
+    "changeSlot": "Change meal slot",
     "undo": "Undo",
     "delete": "Delete planned meal",
     "hint": "Roll a bowl, tap \"Plan today\" to add it to your week.",
@@ -439,14 +461,24 @@
     },
     "recommendations": {
       "title": "Recommendations",
-      "body": "Default weights used by the roll algorithm. Tuning lives on the roadmap.",
+      "body": "Tune how the roll algorithm scores components. Stored locally on this device.",
+      "reset": "Reset to defaults",
       "weights": {
-        "price": "Price",
-        "nutrition": "Nutrition",
+        "taste_match": "Taste match",
         "novelty": "Novelty",
-        "directionMatch": "Direction match",
-        "rating": "Rating"
+        "price_fit": "Price fit",
+        "nutrition_fit": "Nutrition fit",
+        "time_fit": "Time fit",
+        "pantry_bonus": "Pantry bonus",
+        "direction_match": "Direction match"
       }
+    },
+    "blacklist": {
+      "title": "Blacklisted components",
+      "body": "Components you've banned from rolls. Restore any to bring it back.",
+      "empty": "Nothing blacklisted.",
+      "loading": "Loading…",
+      "restore": "Restore"
     },
     "data": {
       "title": "Data",

@@ -32,9 +32,7 @@ planned_router = APIRouter(prefix="/v1/planned", tags=["planned-meals"])
 async def list_saved(session: AsyncSession = Depends(get_session)) -> SavedMealList:
     repo = SavedMealRepository(session)
     items = await repo.list()
-    return SavedMealList(
-        items=[SavedMealRead.from_domain(m) for m in items], total=len(items)
-    )
+    return SavedMealList(items=[SavedMealRead.from_domain(m) for m in items], total=len(items))
 
 
 @saved_router.post(
@@ -62,9 +60,7 @@ async def create_saved(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a saved meal",
 )
-async def delete_saved(
-    meal_id: UUID, session: AsyncSession = Depends(get_session)
-) -> Response:
+async def delete_saved(meal_id: UUID, session: AsyncSession = Depends(get_session)) -> Response:
     repo = SavedMealRepository(session)
     if not await repo.delete(meal_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
@@ -81,9 +77,7 @@ async def list_planned(
 ) -> PlannedMealList:
     repo = PlannedMealRepository(session)
     items = await repo.list(start=start, end=end)
-    return PlannedMealList(
-        items=[PlannedMealRead.from_domain(m) for m in items], total=len(items)
-    )
+    return PlannedMealList(items=[PlannedMealRead.from_domain(m) for m in items], total=len(items))
 
 
 @planned_router.post(
@@ -136,9 +130,7 @@ async def update_planned(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete a planned meal",
 )
-async def delete_planned(
-    meal_id: UUID, session: AsyncSession = Depends(get_session)
-) -> Response:
+async def delete_planned(meal_id: UUID, session: AsyncSession = Depends(get_session)) -> Response:
     repo = PlannedMealRepository(session)
     if not await repo.delete(meal_id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")

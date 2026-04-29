@@ -138,6 +138,7 @@ def _build_component(
         dietary_tags=_parse_pipe_list(row.get("dietary_tags", "")),
         allergens=_parse_pipe_list(row.get("allergens", "")),
         shelf_life_days=int(row["shelf_life_days"]) if row.get("shelf_life_days") else None,
+        seasonal_availability=(row.get("typical_availability") or "").strip() or None,
         blacklisted=_parse_bool(row.get("blacklisted", "false")),
     )
 
@@ -156,8 +157,7 @@ def read_seed(
             method_specs = methods_by_id.get(comp_id, [])
             if not method_specs:
                 raise ValueError(
-                    f"component {row['name']!r} (id={comp_id}) has no rows in "
-                    "cooking_methods.csv"
+                    f"component {row['name']!r} (id={comp_id}) has no rows in cooking_methods.csv"
                 )
             components.append(_build_component(row, list(method_specs)))
     return components
@@ -174,9 +174,7 @@ async def upsert_components(
     """
     sessionmaker = get_sessionmaker()
     async with sessionmaker() as session:
-        existing_count = (
-            await session.execute(select(ComponentRow.id).limit(1))
-        ).scalar()
+        existing_count = (await session.execute(select(ComponentRow.id).limit(1))).scalar()
         if existing_count is not None and not force:
             raise RuntimeError(
                 "database already contains components — pass --force to "
@@ -184,8 +182,7 @@ async def upsert_components(
             )
 
         existing_names = {
-            name
-            for (name,) in (await session.execute(select(ComponentRow.name))).all()
+            name for (name,) in (await session.execute(select(ComponentRow.name))).all()
         }
         repo = ComponentRepository(session)
         inserted = 0
@@ -229,9 +226,7 @@ def main(argv: list[str] | None = None) -> int:
     sys.stderr.write(f"parsed {len(components)} components from CSV\n")
 
     try:
-        inserted, skipped = asyncio.run(
-            upsert_components(components, force=args.force)
-        )
+        inserted, skipped = asyncio.run(upsert_components(components, force=args.force))
     except RuntimeError as err:
         sys.stderr.write(f"error: {err}\n")
         return 2

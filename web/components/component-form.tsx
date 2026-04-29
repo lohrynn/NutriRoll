@@ -1,16 +1,17 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { apiClient } from "@/lib/api/client";
+import { useAllowedMethods, useCategories, useComponentMeta } from "@/lib/components/meta";
 import {
-  ALLOWED_METHODS,
-  CATEGORIES,
   type Category,
   type ComponentCreate,
   type ComponentRead,
   type CookingMethod,
+  MACRO_KEYS,
+  type MacroKey,
   PORTION_UNITS,
   type PortionUnit,
   parseCsvList,
@@ -24,40 +25,69 @@ interface MethodRow {
 }
 
 interface Props {
-  onCreated: (component: ComponentRead) => void;
+  onCreated?: (component: ComponentRead) => void;
+  editId?: string;
+  onUpdated?: (component: ComponentRead) => void;
+  onCancel?: () => void;
+  initialValues?: ComponentRead;
 }
 
-export function ComponentForm({ onCreated }: Props) {
+export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialValues }: Props) {
   const t = useTranslations("components.form");
   const tMethod = useTranslations("components.method");
 
-  const [category, setCategory] = useState<Category>("base");
-  const [name, setName] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [portionValue, setPortionValue] = useState("80");
-  const [portionUnit, setPortionUnit] = useState<PortionUnit>("g");
-  const [kcal, setKcal] = useState("0");
-  const [carbs, setCarbs] = useState("0");
-  const [protein, setProtein] = useState("0");
-  const [fat, setFat] = useState("0");
-  const [fiber, setFiber] = useState("0");
-  const [flavorTags, setFlavorTags] = useState("");
-  const [dietaryTags, setDietaryTags] = useState("");
-  const [allergens, setAllergens] = useState("");
-  const [shelfLifeDays, setShelfLifeDays] = useState("");
-  const [blacklisted, setBlacklisted] = useState(false);
-  const [methods, setMethods] = useState<MethodRow[]>([
-    { method: "boil", approxMinutes: "", canCookWithOthers: true, notes: "" },
-  ]);
-  const [defaultMethod, setDefaultMethod] = useState<CookingMethod>("boil");
+  const [category, setCategory] = useState<Category>(() => initialValues?.category ?? "base");
+  const [name, setName] = useState(() => initialValues?.name ?? "");
+  const [imageUrl, setImageUrl] = useState(() => initialValues?.image_url ?? "");
+  const [portionValue, setPortionValue] = useState(() =>
+    initialValues?.default_portion.value != null
+      ? String(initialValues.default_portion.value)
+      : "80",
+  );
+  const [portionUnit, setPortionUnit] = useState<PortionUnit>(
+    () => initialValues?.default_portion.unit ?? "g",
+  );
+  const [macros, setMacros] = useState<Record<MacroKey, string>>(() => {
+    const initial = initialValues?.macros_per_100g;
+    return Object.fromEntries(
+      MACRO_KEYS.map((key) => {
+        const v = initial?.[key];
+        return [key, typeof v === "number" ? String(v) : "0"];
+      }),
+    ) as Record<MacroKey, string>;
+  });
+  const [flavorTags, setFlavorTags] = useState(() => initialValues?.flavor_tags?.join(", ") ?? "");
+  const [dietaryTags, setDietaryTags] = useState(
+    () => initialValues?.dietary_tags?.join(", ") ?? "",
+  );
+  const [allergens, setAllergens] = useState(() => initialValues?.allergens?.join(", ") ?? "");
+  const [shelfLifeDays, setShelfLifeDays] = useState(() =>
+    initialValues?.shelf_life_days != null ? String(initialValues.shelf_life_days) : "",
+  );
+  const [blacklisted, setBlacklisted] = useState(() => initialValues?.blacklisted ?? false);
+  const [methods, setMethods] = useState<MethodRow[]>(() =>
+    initialValues
+      ? initialValues.cooking_methods.map((m) => ({
+          method: m.method,
+          approxMinutes: m.approx_minutes != null ? String(m.approx_minutes) : "",
+          canCookWithOthers: m.can_cook_with_others,
+          notes: m.notes ?? "",
+        }))
+      : [{ method: "boil", approxMinutes: "", canCookWithOthers: true, notes: "" }],
+  );
+  const [defaultMethod, setDefaultMethod] = useState<CookingMethod>(
+    () => initialValues?.default_cooking_method ?? "boil",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const allowed = useMemo(() => ALLOWED_METHODS[category], [category]);
+  const allowed = useAllowedMethods(category);
+  const categories = useCategories();
+  const meta = useComponentMeta();
 
   function changeCategory(next: Category) {
     setCategory(next);
-    const allowedNext = ALLOWED_METHODS[next];
+    const allowedNext = meta?.allowed_methods[next] ?? [];
     setMethods((prev) => prev.filter((m) => allowedNext.includes(m.method)));
     const fallback = allowedNext[0];
     if (fallback === undefined) return;
@@ -107,11 +137,11 @@ export function ComponentForm({ onCreated }: Props) {
       image_url: imageUrl.trim() === "" ? null : imageUrl.trim(),
       default_portion: { value: Number(portionValue), unit: portionUnit },
       macros_per_100g: {
-        kcal: Number(kcal),
-        carbs_g: Number(carbs),
-        protein_g: Number(protein),
-        fat_g: Number(fat),
-        fiber_g: Number(fiber),
+        kcal: Number(macros.kcal),
+        carbs_g: Number(macros.carbs_g),
+        protein_g: Number(macros.protein_g),
+        fat_g: Number(macros.fat_g),
+        fiber_g: Number(macros.fiber_g),
       },
       default_cooking_method: defaultMethod,
       cooking_methods: methods.map((row) => ({
@@ -128,9 +158,14 @@ export function ComponentForm({ onCreated }: Props) {
     };
 
     try {
-      const { data, error, response } = await apiClient.POST("/v1/components", {
-        body: payload,
-      });
+      const apiCall =
+        editId !== undefined
+          ? apiClient.PUT("/v1/components/{component_id}", {
+              params: { path: { component_id: editId } },
+              body: payload,
+            })
+          : apiClient.POST("/v1/components", { body: payload });
+      const { data, error, response } = await apiCall;
       if (error || !data) {
         setErrorMessage(
           t("errors.submitFailed", {
@@ -142,12 +177,16 @@ export function ComponentForm({ onCreated }: Props) {
         );
         return;
       }
-      onCreated(data);
-      setName("");
-      setImageUrl("");
-      setFlavorTags("");
-      setDietaryTags("");
-      setAllergens("");
+      if (editId !== undefined) {
+        onUpdated?.(data);
+      } else {
+        onCreated?.(data);
+        setName("");
+        setImageUrl("");
+        setFlavorTags("");
+        setDietaryTags("");
+        setAllergens("");
+      }
     } catch (err) {
       setErrorMessage(
         t("errors.submitFailed", {
@@ -185,7 +224,7 @@ export function ComponentForm({ onCreated }: Props) {
             onChange={(e) => changeCategory(e.target.value as Category)}
             className="rounded border border-current/30 bg-transparent px-3 py-2"
           >
-            {CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -236,23 +275,15 @@ export function ComponentForm({ onCreated }: Props) {
       <fieldset className="grid gap-2 rounded border border-current/20 p-3">
         <legend className="px-1 text-sm font-medium">{t("macros")}</legend>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {(
-            [
-              ["kcal", kcal, setKcal],
-              ["carbs_g", carbs, setCarbs],
-              ["protein_g", protein, setProtein],
-              ["fat_g", fat, setFat],
-              ["fiber_g", fiber, setFiber],
-            ] as const
-          ).map(([field, value, setter]) => (
+          {MACRO_KEYS.map((field) => (
             <label key={field} className="grid gap-1 text-xs">
               <span>{t(field)}</span>
               <input
                 type="number"
                 min={0}
                 step={0.1}
-                value={value}
-                onChange={(e) => setter(e.target.value)}
+                value={macros[field]}
+                onChange={(e) => setMacros((prev) => ({ ...prev, [field]: e.target.value }))}
                 className="rounded border border-current/30 bg-transparent px-2 py-1"
               />
             </label>
@@ -405,13 +436,24 @@ export function ComponentForm({ onCreated }: Props) {
         </output>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="self-start rounded border border-current/40 px-4 py-2 text-sm font-medium disabled:opacity-50"
-      >
-        {submitting ? t("submitting") : t("submit")}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="self-start rounded border border-current/40 px-4 py-2 text-sm font-medium disabled:opacity-50"
+        >
+          {submitting ? t("submitting") : t("submit")}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="self-start rounded border border-current/30 px-4 py-2 text-sm font-medium"
+          >
+            {t("cancel")}
+          </button>
+        )}
+      </div>
     </form>
   );
 }
