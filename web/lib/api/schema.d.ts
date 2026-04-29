@@ -406,8 +406,21 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /** DirectionSchema */
+        DirectionSchema: {
+            axes?: components["schemas"]["FlavorAxesSchema"];
+            /** Cuisines */
+            cuisines?: string[];
+            /** Moods */
+            moods?: string[];
+        };
         /** FeatureWeightsSchema */
         FeatureWeightsSchema: {
+            /**
+             * Direction Match
+             * @default 0.25
+             */
+            direction_match: number;
             /**
              * Novelty
              * @default 0.2
@@ -438,6 +451,19 @@ export interface components {
              * @default 0.1
              */
             time_fit: number;
+        };
+        /** FlavorAxesSchema */
+        FlavorAxesSchema: {
+            /**
+             * Bold To Mild
+             * @default 0
+             */
+            bold_to_mild: number;
+            /**
+             * Heavy To Light
+             * @default 0
+             */
+            heavy_to_light: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -700,6 +726,7 @@ export interface components {
             blacklisted_ids?: string[];
             /** Dietary Mode */
             dietary_mode?: string | null;
+            direction?: components["schemas"]["DirectionSchema"];
             /** Forced Methods */
             forced_methods?: {
                 [key: string]: components["schemas"]["CookingMethod"];
@@ -710,6 +737,10 @@ export interface components {
             seed?: number | null;
             /** Slots */
             slots: components["schemas"]["SlotSpecSchema"][];
+            /** Tag Boosts */
+            tag_boosts?: {
+                [key: string]: number;
+            };
             /**
              * Temperature
              * @default 0.5

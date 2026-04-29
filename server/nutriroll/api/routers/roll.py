@@ -86,6 +86,7 @@ async def reroll_one_slot(
         forced_methods=base.forced_methods,
         recent_component_ids=base.recent_component_ids,
         weights=base.weights,
+        tag_boosts=base.tag_boosts,
         temperature=base.temperature,
         seed=base.seed,
     )

@@ -74,6 +74,40 @@
       "vegan": "Vegan",
       "vegetarian": "Vegetarisch",
       "pescatarian": "Pescetarisch"
+    },
+    "direction": {
+      "title": "Richtung",
+      "subtitle": "Sanfte Hinweise — sie beeinflussen die Auswahl, blockieren sie aber nicht.",
+      "cuisine": "Küche",
+      "mood": "Stimmung",
+      "axes": "Geschmack",
+      "axisBoldToMild": "Kräftig ↔ Mild",
+      "axisHeavyToLight": "Schwer ↔ Leicht",
+      "clear": "Zurücksetzen",
+      "cuisines": {
+        "asian": "Asiatisch",
+        "mediterranean": "Mediterran",
+        "mexican": "Mexikanisch",
+        "middle_eastern": "Nahost",
+        "american": "Amerikanisch",
+        "fusion": "Fusion"
+      },
+      "moods": {
+        "quick_weekday": "Schneller Werktag",
+        "light_fresh": "Leicht & frisch",
+        "comfort": "Soulfood",
+        "impress": "Beeindrucken",
+        "use_what_i_have": "Was da ist verwenden",
+        "surprise_me": "Überrasch mich"
+      }
+    },
+    "nutrition": {
+      "title": "Pro Portion (geschätzt)",
+      "kcal": "{value} kcal",
+      "carbs": "Kohlenhydrate {value} g",
+      "protein": "Eiweiß {value} g",
+      "fat": "Fett {value} g",
+      "fiber": "Ballaststoffe {value} g"
     }
   },
   "recipe": {

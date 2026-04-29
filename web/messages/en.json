@@ -74,6 +74,40 @@
       "vegan": "Vegan",
       "vegetarian": "Vegetarian",
       "pescatarian": "Pescatarian"
+    },
+    "direction": {
+      "title": "Direction",
+      "subtitle": "Soft hints — they nudge the roll, never block it.",
+      "cuisine": "Cuisine",
+      "mood": "Mood",
+      "axes": "Flavor",
+      "axisBoldToMild": "Bold ↔ Mild",
+      "axisHeavyToLight": "Heavy ↔ Light",
+      "clear": "Clear",
+      "cuisines": {
+        "asian": "Asian",
+        "mediterranean": "Mediterranean",
+        "mexican": "Mexican",
+        "middle_eastern": "Middle-Eastern",
+        "american": "American",
+        "fusion": "Fusion"
+      },
+      "moods": {
+        "quick_weekday": "Quick weekday",
+        "light_fresh": "Light & fresh",
+        "comfort": "Comfort",
+        "impress": "Impress someone",
+        "use_what_i_have": "Use what I have",
+        "surprise_me": "Surprise me"
+      }
+    },
+    "nutrition": {
+      "title": "Per portion (estimated)",
+      "kcal": "{value} kcal",
+      "carbs": "Carbs {value} g",
+      "protein": "Protein {value} g",
+      "fat": "Fat {value} g",
+      "fiber": "Fiber {value} g"
     }
   },
   "recipe": {

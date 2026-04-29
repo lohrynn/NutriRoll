@@ -28,11 +28,42 @@ interface RollControls {
   forceBaseMethod: CookingMethod | "";
 }
 
+interface DirectionState {
+  cuisines: Set<string>;
+  moods: Set<string>;
+  boldToMild: number;
+  heavyToLight: number;
+}
+
+const CUISINES = [
+  "asian",
+  "mediterranean",
+  "mexican",
+  "middle_eastern",
+  "american",
+  "fusion",
+] as const;
+const MOODS = [
+  "quick_weekday",
+  "light_fresh",
+  "comfort",
+  "impress",
+  "use_what_i_have",
+  "surprise_me",
+] as const;
+
 const INITIAL_CONTROLS: RollControls = {
   timeBudgetMin: 30,
   dietaryMode: "",
   allergensCsv: "",
   forceBaseMethod: "",
+};
+
+const INITIAL_DIRECTION: DirectionState = {
+  cuisines: new Set<string>(),
+  moods: new Set<string>(),
+  boldToMild: 0,
+  heavyToLight: 0,
 };
 
 const CATEGORY_ICON: Record<Category, typeof Salad> = {
@@ -51,26 +82,48 @@ function parseCsv(input: string): string[] {
 
 export function RollPage() {
   const t = useTranslations("roll");
+  const tDirection = useTranslations("roll.direction");
+  const tNutrition = useTranslations("roll.nutrition");
   const tCategory = useTranslations("components.category");
   const router = useRouter();
 
   const [controls, setControls] = useState<RollControls>(INITIAL_CONTROLS);
+  const [direction, setDirection] = useState<DirectionState>(INITIAL_DIRECTION);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  const toggleSetMember = (which: "cuisines" | "moods", value: string) => {
+    setDirection((d) => {
+      const next = new Set(d[which]);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return { ...d, [which]: next };
+    });
+  };
 
   const buildRequestBody = useCallback(() => {
     const forced: Partial<Record<Category, CookingMethod>> = {};
     if (controls.forceBaseMethod !== "") {
       forced.base = controls.forceBaseMethod;
     }
+    // Surprise me bumps softmax temperature to flatten the distribution.
+    const surpriseBump = direction.moods.has("surprise_me") ? 0.5 : 0;
     return {
       slots: [...DEFAULT_SLOTS],
       time_budget_min: controls.timeBudgetMin === "" ? null : Number(controls.timeBudgetMin),
       dietary_mode: controls.dietaryMode === "" ? null : controls.dietaryMode,
       allergens_excluded: parseCsv(controls.allergensCsv),
       forced_methods: forced as Record<Category, CookingMethod>,
-      temperature: 0.5,
+      direction: {
+        cuisines: [...direction.cuisines],
+        moods: [...direction.moods],
+        axes: {
+          bold_to_mild: direction.boldToMild,
+          heavy_to_light: direction.heavyToLight,
+        },
+      },
+      temperature: 0.5 + surpriseBump,
     };
-  }, [controls]);
+  }, [controls, direction]);
 
   const rollAll = useCallback(async () => {
     setStatus({ kind: "rolling" });
@@ -212,6 +265,111 @@ export function RollPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <span>{t("direction.title")}</span>
+            {(direction.cuisines.size > 0 ||
+              direction.moods.size > 0 ||
+              direction.boldToMild !== 0 ||
+              direction.heavyToLight !== 0) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setDirection(INITIAL_DIRECTION)}
+              >
+                {t("direction.clear")}
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <p className="text-xs text-[color:var(--color-muted)]">{t("direction.subtitle")}</p>
+          <div className="grid gap-2">
+            <p className="text-sm font-medium">{t("direction.cuisine")}</p>
+            <div className="flex flex-wrap gap-2">
+              {CUISINES.map((c) => {
+                const active = direction.cuisines.has(c);
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleSetMember("cuisines", c)}
+                    className={
+                      active
+                        ? "rounded-full bg-[color:var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-brand-fg)] shadow-[var(--shadow-pop)] transition active:scale-95"
+                        : "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-fg)] transition hover:border-[color:var(--color-brand)] active:scale-95"
+                    }
+                  >
+                    {tDirection(`cuisines.${c}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <p className="text-sm font-medium">{t("direction.mood")}</p>
+            <div className="flex flex-wrap gap-2">
+              {MOODS.map((m) => {
+                const active = direction.moods.has(m);
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleSetMember("moods", m)}
+                    className={
+                      active
+                        ? "rounded-full bg-[color:var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-brand-fg)] shadow-[var(--shadow-pop)] transition active:scale-95"
+                        : "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-fg)] transition hover:border-[color:var(--color-brand)] active:scale-95"
+                    }
+                  >
+                    {tDirection(`moods.${m}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="grid gap-3">
+            <p className="text-sm font-medium">{t("direction.axes")}</p>
+            <label className="grid gap-1 text-xs">
+              <span className="text-[color:var(--color-muted)]">
+                {t("direction.axisBoldToMild")}
+              </span>
+              <input
+                type="range"
+                min={-1}
+                max={1}
+                step={0.1}
+                value={direction.boldToMild}
+                onChange={(e) =>
+                  setDirection((d) => ({ ...d, boldToMild: Number(e.target.value) }))
+                }
+                className="w-full accent-[color:var(--color-brand)]"
+              />
+            </label>
+            <label className="grid gap-1 text-xs">
+              <span className="text-[color:var(--color-muted)]">
+                {t("direction.axisHeavyToLight")}
+              </span>
+              <input
+                type="range"
+                min={-1}
+                max={1}
+                step={0.1}
+                value={direction.heavyToLight}
+                onChange={(e) =>
+                  setDirection((d) => ({ ...d, heavyToLight: Number(e.target.value) }))
+                }
+                className="w-full accent-[color:var(--color-brand)]"
+              />
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
       <Button
         type="button"
         size="lg"
@@ -241,6 +399,52 @@ export function RollPage() {
               {t("cookNow")}
             </Button>
           </div>
+          <Card>
+            <CardContent className="grid gap-2">
+              <p className="text-xs uppercase tracking-wide text-[color:var(--color-muted)]">
+                {tNutrition("title")}
+              </p>
+              {(() => {
+                const totals = status.bowl.slots.reduce(
+                  (acc, s) => {
+                    const m = s.component.macros_per_100g;
+                    const portionG =
+                      s.component.default_portion.unit === "g"
+                        ? s.component.default_portion.value
+                        : 0;
+                    const factor = portionG / 100;
+                    return {
+                      kcal: acc.kcal + m.kcal * factor,
+                      carbs: acc.carbs + m.carbs_g * factor,
+                      protein: acc.protein + m.protein_g * factor,
+                      fat: acc.fat + m.fat_g * factor,
+                      fiber: acc.fiber + m.fiber_g * factor,
+                    };
+                  },
+                  { kcal: 0, carbs: 0, protein: 0, fat: 0, fiber: 0 },
+                );
+                return (
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="brand" className="tabular-nums">
+                      {tNutrition("kcal", { value: Math.round(totals.kcal) })}
+                    </Badge>
+                    <Badge className="tabular-nums">
+                      {tNutrition("carbs", { value: Math.round(totals.carbs) })}
+                    </Badge>
+                    <Badge className="tabular-nums">
+                      {tNutrition("protein", { value: Math.round(totals.protein) })}
+                    </Badge>
+                    <Badge className="tabular-nums">
+                      {tNutrition("fat", { value: Math.round(totals.fat) })}
+                    </Badge>
+                    <Badge className="tabular-nums">
+                      {tNutrition("fiber", { value: Math.round(totals.fiber) })}
+                    </Badge>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
           <ul className="grid gap-3">
             {status.bowl.slots.map((slot, idx) => {
               const Icon = CATEGORY_ICON[slot.component.category];

@@ -22,3 +22,4 @@ Phases map directly to the milestone list in `PROJECT_VISION.md § "MVP scoping 
 | [phase-4-pantry.md](phase-4-pantry.md) | ✅ Done | Pantry domain + CRUD API + `/pantry` page |
 | [phase-5-stores-shopping.md](phase-5-stores-shopping.md) | ✅ Done | Stores CRUD + per-store prices + `POST /v1/shopping-list` + `/stores` and `/shop` pages |
 | [phase-6-ratings-history.md](phase-6-ratings-history.md) | ✅ Done | Ratings (overall + per-component) + append-only history feed + `/cook`, `/history`, `/me` pages |
+| [phase-7-directions.md](phase-7-directions.md) | ✅ Done | Direction chips (cuisine/mood) + flavor-axis sliders + per-portion nutrition summary |

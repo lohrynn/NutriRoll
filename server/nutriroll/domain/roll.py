@@ -45,6 +45,7 @@ class FeatureWeights:
     nutrition_fit: float = 0.15
     time_fit: float = 0.10
     pantry_bonus: float = 0.05
+    direction_match: float = 0.25
 
     def __post_init__(self) -> None:
         for label in (
@@ -54,6 +55,7 @@ class FeatureWeights:
             "nutrition_fit",
             "time_fit",
             "pantry_bonus",
+            "direction_match",
         ):
             v: float = getattr(self, label)
             if v < 0:
@@ -72,6 +74,7 @@ class RollRequest:
     )
     recent_component_ids: frozenset[UUID] = field(default_factory=frozenset[UUID])
     weights: FeatureWeights = field(default_factory=FeatureWeights)
+    tag_boosts: Mapping[str, float] = field(default_factory=dict[str, float])
     temperature: float = 0.5
     seed: int | None = None
 
@@ -80,6 +83,13 @@ class RollRequest:
             raise ValueError("temperature must be > 0")
         if self.time_budget_min is not None and self.time_budget_min < 0:
             raise ValueError("time_budget_min must be >= 0")
+        for tag, boost in self.tag_boosts.items():
+            if not tag.strip():
+                raise ValueError("tag_boosts keys must be non-empty")
+            if boost < -1.0 or boost > 1.0:
+                raise ValueError(
+                    f"tag_boosts[{tag!r}] must be in [-1, 1], got {boost}"
+                )
 
 
 @dataclass(frozen=True, slots=True)
@@ -224,6 +234,23 @@ def _novelty(component: Component, recent: frozenset[UUID]) -> float:
     return 0.0 if component.id in recent else 1.0
 
 
+def _direction_match(component: Component, boosts: Mapping[str, float]) -> float:
+    """Sum the boosts whose tag the component carries; clip to [-1, 1].
+
+    Negative boosts soft-penalise (used by axis sliders pulling the other
+    direction). A component with no overlapping tags scores 0 and is
+    therefore neutral with respect to direction selection.
+    """
+    if not boosts:
+        return 0.0
+    tags = set(component.flavor_tags) | set(component.dietary_tags)
+    total = 0.0
+    for tag, boost in boosts.items():
+        if tag in tags:
+            total += boost
+    return max(-1.0, min(1.0, total))
+
+
 def score_component(
     component: Component,
     request: RollRequest,
@@ -233,6 +260,7 @@ def score_component(
     f_nutrition = _nutrition_fit(component)
     f_time = _time_fit(component, request.time_budget_min)
     f_novelty = _novelty(component, request.recent_component_ids)
+    f_direction = _direction_match(component, request.tag_boosts)
     # taste_match / price_fit / pantry_bonus require profile data we don't
     # have in v1 — treat as neutral 0.5 so weights still influence ordering
     # if the user dials them up.
@@ -243,6 +271,7 @@ def score_component(
         "taste_match": w.taste_match * 0.5,
         "price_fit": w.price_fit * 0.5,
         "pantry_bonus": w.pantry_bonus * 0.0,
+        "direction_match": w.direction_match * f_direction,
     }
     return sum(contributions.values()), contributions
 
@@ -313,6 +342,16 @@ def _top_reasons(
             out.append("fits your per-portion budget")
         elif name == "pantry_bonus":
             out.append("already in your pantry")
+        elif name == "direction_match":
+            matched = sorted(
+                tag
+                for tag, boost in request.tag_boosts.items()
+                if boost > 0 and tag in set(component.flavor_tags) | set(component.dietary_tags)
+            )
+            if matched:
+                out.append(f"matches your direction ({', '.join(matched[:2])})")
+            else:
+                out.append("matches the direction you picked")
     return tuple(out)
 
 
@@ -449,6 +488,7 @@ def reroll_slot(
         forced_methods=request.forced_methods,
         recent_component_ids=request.recent_component_ids,
         weights=request.weights,
+        tag_boosts=request.tag_boosts,
         temperature=request.temperature,
         seed=request.seed,
     )
