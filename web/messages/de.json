@@ -61,6 +61,10 @@
         "title": "Essensplan",
         "description": "Plane Mahlzeiten für die Woche."
       },
+      "settings": {
+        "title": "Einstellungen",
+        "description": "Profil, Darstellung, Datenexport."
+      },
       "onboarding": {
         "title": "Einrichtung",
         "description": "Willkommens-Flow erneut starten, um Präferenzen zu aktualisieren."
@@ -409,6 +413,55 @@
         "shellfish": "Meeresfrüchte",
         "sesame": "Sesam"
       }
+    }
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "subtitle": "Profil, Darstellung und Daten.",
+    "profile": {
+      "title": "Profil",
+      "dietary": "Ernährungsweise",
+      "allergens": "Allergene ausschließen",
+      "timeBudget": "Standard-Zeitbudget (Minuten)",
+      "timeBudgetPlaceholder": "z. B. 25",
+      "goal": "Ziel",
+      "goalPlaceholder": "z. B. mehr Protein, weniger Zucker",
+      "save": "Änderungen speichern",
+      "saving": "Speichere…",
+      "saved": "Gespeichert."
+    },
+    "appearance": {
+      "title": "Darstellung",
+      "body": "System-Farbschema überschreiben.",
+      "system": "System",
+      "light": "Hell",
+      "dark": "Dunkel"
+    },
+    "recommendations": {
+      "title": "Empfehlungen",
+      "body": "Standardgewichte des Roll-Algorithmus. Anpassung folgt.",
+      "weights": {
+        "price": "Preis",
+        "nutrition": "Nährwerte",
+        "novelty": "Neuheit",
+        "directionMatch": "Richtung",
+        "rating": "Bewertung"
+      }
+    },
+    "data": {
+      "title": "Daten",
+      "body": "Lade einen JSON-Snapshot deines Profils, der Komponenten, Favoriten, des Plans und der Historie herunter.",
+      "export": "JSON exportieren",
+      "exporting": "Exportiere…",
+      "resetLocal": "Lokales Theme zurücksetzen"
+    },
+    "about": {
+      "title": "Über",
+      "version": "NutriRoll v{version}",
+      "tagline": "Eine ausgewogene Bowl in Sekunden."
+    },
+    "errors": {
+      "timeBudget": "Zeitbudget muss eine positive Minutenzahl sein."
     }
   }
 }

@@ -61,6 +61,10 @@
         "title": "Meal plan",
         "description": "Schedule meals for the week."
       },
+      "settings": {
+        "title": "Settings",
+        "description": "Profile, appearance, data export."
+      },
       "onboarding": {
         "title": "Onboarding",
         "description": "Re-run the welcome flow to update preferences."
@@ -409,6 +413,55 @@
         "shellfish": "Shellfish",
         "sesame": "Sesame"
       }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Profile, appearance and data.",
+    "profile": {
+      "title": "Profile",
+      "dietary": "Dietary mode",
+      "allergens": "Allergens to exclude",
+      "timeBudget": "Default time budget (minutes)",
+      "timeBudgetPlaceholder": "e.g. 25",
+      "goal": "Goal",
+      "goalPlaceholder": "e.g. more protein, less sugar",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "saved": "Saved."
+    },
+    "appearance": {
+      "title": "Appearance",
+      "body": "Override the system color scheme.",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "recommendations": {
+      "title": "Recommendations",
+      "body": "Default weights used by the roll algorithm. Tuning lives on the roadmap.",
+      "weights": {
+        "price": "Price",
+        "nutrition": "Nutrition",
+        "novelty": "Novelty",
+        "directionMatch": "Direction match",
+        "rating": "Rating"
+      }
+    },
+    "data": {
+      "title": "Data",
+      "body": "Download a JSON snapshot of your profile, components, saved meals, plan and history.",
+      "export": "Export JSON",
+      "exporting": "Exporting…",
+      "resetLocal": "Reset local theme"
+    },
+    "about": {
+      "title": "About",
+      "version": "NutriRoll v{version}",
+      "tagline": "A balanced bowl in seconds."
+    },
+    "errors": {
+      "timeBudget": "Time budget must be a positive number of minutes."
     }
   }
 }

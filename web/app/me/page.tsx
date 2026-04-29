@@ -4,6 +4,7 @@ import {
   ChevronRight,
   ClipboardList,
   Heart,
+  Settings as SettingsIcon,
   Sparkles,
   Store as StoreIcon,
   User,
@@ -20,6 +21,7 @@ const TILES = [
   { href: "/stores", icon: StoreIcon, key: "stores" as const },
   { href: "/saved", icon: Heart, key: "saved" as const },
   { href: "/history", icon: ClipboardList, key: "history" as const },
+  { href: "/settings", icon: SettingsIcon, key: "settings" as const },
   { href: "/onboarding", icon: Sparkles, key: "onboarding" as const },
 ] as const;
 
