@@ -140,9 +140,9 @@ roll-result snapshot already stored as JSON for saved/planned meals.
 - Multi-portion meal-prep optimization (cook 3 portions at once, total
   cook time, total grocery list) — Phase 12.
 - AI-assisted target inference from goal text ("I want to lose weight"
-  → kcal target) — Phase 13 / LLM phase.
-- Macro tracking dashboard ("how close was I last week?") — Phase 16.
-- Per-day total targets across the planner (vs per-meal) — Phase 17.
+  → kcal target) — Phase 15.
+- Macro tracking dashboard ("how close was I last week?") — Phase 17.
+- Per-day total targets across the planner (vs per-meal) — future phase.
 
 ---
 

@@ -30,6 +30,6 @@ Phases map directly to the milestone list in `PROJECT_VISION.md § "MVP scoping 
 | [phase-12-meal-prep.md](phase-12-meal-prep.md) | 🟡 TODO | Multi-portion roll: cook once, eat N — scaled recipe + planner countdown |
 | [phase-13-equipment.md](phase-13-equipment.md) | 🟡 TODO | Equipment profile filters allowed cooking methods |
 | [phase-14-cooking-timers.md](phase-14-cooking-timers.md) | 🟡 TODO | Live per-step countdown timers + PWA notifications on Cook page |
-| [phase-15-notifications.md](phase-15-notifications.md) | 🟡 TODO | PWA push: planner reminders, expiring pantry, weekly summary |
-| [phase-16-macro-history.md](phase-16-macro-history.md) | 🟡 TODO | Nutrition tracking dashboard: actual vs target over time |
-| [phase-17-ai-assistant.md](phase-17-ai-assistant.md) | 🟡 TODO | BYO LLM: goal interpretation, recipe customization, week planning |
+| [phase-15-ai-assistant.md](phase-15-ai-assistant.md) | 🟡 TODO | BYO LLM: goal interpretation, recipe customization, week planning |
+| [phase-16-notifications.md](phase-16-notifications.md) | 🟡 TODO | PWA push: planner reminders, expiring pantry, weekly summary |
+| [phase-17-macro-history.md](phase-17-macro-history.md) | 🟡 TODO | Nutrition tracking dashboard: actual vs target over time |

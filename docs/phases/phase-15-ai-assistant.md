@@ -1,4 +1,4 @@
-# Phase 17 — AI assistant (BYO LLM key)
+# Phase 15 — AI assistant (BYO LLM key)
 
 **Status:** TODO (not started, longest-deferred)
 
