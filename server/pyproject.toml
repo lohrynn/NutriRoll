@@ -1,0 +1,84 @@
+[project]
+name = "nutriroll"
+version = "0.0.0"
+description = "NutriRoll backend — FastAPI service for the bowl-meal recommendation PWA."
+requires-python = ">=3.13"
+readme = "README.md"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "structlog>=24.4",
+    "httpx>=0.28",
+    "python-multipart>=0.0.20",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.115",
+    "ruff>=0.7",
+    "pyright>=1.1.385",
+    "testcontainers[postgres]>=4.8",
+    "anyio>=4.6",
+    "aiosqlite>=0.20",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["nutriroll"]
+
+# ---------- ruff ----------
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # pycodestyle / pyflakes
+    "I",             # isort
+    "UP",            # pyupgrade
+    "B",             # bugbear
+    "ASYNC",         # async pitfalls
+    "S",             # bandit-lite
+    "SIM",           # simplify
+    "RUF",           # ruff-specific
+]
+ignore = [
+    "S101",  # asserts ok in tests
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "B"]
+"alembic/env.py" = ["E402"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Header", "fastapi.Body"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------- pyright (strict) ----------
+[tool.pyright]
+include = ["nutriroll", "tests"]
+exclude = ["**/__pycache__", "alembic/versions", ".venv"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+reportMissingTypeStubs = false
+reportUnknownMemberType = "warning"
+reportUnknownVariableType = "warning"
+
+# ---------- pytest ----------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+filterwarnings = ["error"]

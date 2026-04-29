@@ -1,0 +1,93 @@
+{
+  "app": {
+    "title": "NutriRoll",
+    "tagline": "In Sekunden eine günstige, leckere Bowl würfeln."
+  },
+  "nav": {
+    "components": "Komponenten"
+  },
+  "components": {
+    "title": "Komponenten",
+    "subtitle": "Verwalte die Basen, Gemüse, Saucen und Toppings, aus denen Bowls gewürfelt werden.",
+    "empty": "Noch keine Komponenten. Füge unten die erste hinzu.",
+    "loading": "Komponenten werden geladen…",
+    "loadError": "Komponenten konnten nicht geladen werden: {message}",
+    "addNew": "Komponente hinzufügen",
+    "filter": {
+      "all": "Alle Kategorien",
+      "base": "Basen",
+      "vegetable": "Gemüse",
+      "sauce": "Saucen",
+      "topping": "Toppings"
+    },
+    "row": {
+      "blacklisted": "blockiert",
+      "kcal": "{value} kcal/100g",
+      "portion": "Portion: {value} {unit}"
+    },
+    "form": {
+      "name": "Name",
+      "category": "Kategorie",
+      "image_url": "Bild-URL (optional)",
+      "default_portion_value": "Standardportion",
+      "default_portion_unit": "Einheit",
+      "macros": "Nährwerte pro 100g",
+      "kcal": "kcal",
+      "carbs_g": "Kohlenhydrate (g)",
+      "protein_g": "Eiweiß (g)",
+      "fat_g": "Fett (g)",
+      "fiber_g": "Ballaststoffe (g)",
+      "default_cooking_method": "Standard-Zubereitung",
+      "cooking_methods": "Unterstützte Zubereitungen",
+      "approx_minutes": "Ungefähre Minuten",
+      "can_cook_with_others": "Mit anderen kochbar",
+      "notes": "Notizen",
+      "flavor_tags": "Geschmacks-Tags (kommagetrennt)",
+      "dietary_tags": "Ernährungs-Tags (kommagetrennt)",
+      "allergens": "Allergene (kommagetrennt)",
+      "shelf_life_days": "Haltbarkeit (Tage, optional)",
+      "blacklisted": "Blockiert",
+      "submit": "Komponente speichern",
+      "submitting": "Speichern…",
+      "addMethod": "Zubereitung hinzufügen",
+      "removeMethod": "Entfernen",
+      "errors": {
+        "required": "Pflichtfeld",
+        "submitFailed": "Speichern fehlgeschlagen: {message}"
+      }
+    },
+    "category": {
+      "base": "Basis",
+      "vegetable": "Gemüse",
+      "sauce": "Sauce",
+      "topping": "Topping"
+    },
+    "method": {
+      "boil": "Kochen",
+      "steam": "Dämpfen",
+      "blanch": "Blanchieren",
+      "pan_fry": "Anbraten",
+      "roast": "Rösten",
+      "air_fry": "Heißluft",
+      "grill": "Grillen",
+      "bake": "Backen",
+      "toast": "Toasten",
+      "raw": "Roh",
+      "no_prep": "Keine Zubereitung",
+      "blend_cold": "Mixen (kalt)",
+      "blend_hot": "Mixen (warm)",
+      "heat": "Erhitzen",
+      "whisk_cold": "Verquirlen (kalt)",
+      "whisk_hot": "Verquirlen (warm)",
+      "reduce": "Reduzieren",
+      "saute_simmer": "Anschwitzen & köcheln",
+      "crumble": "Bröseln",
+      "custom": "Eigene"
+    },
+    "unit": {
+      "g": "g",
+      "ml": "ml",
+      "pc": "St."
+    }
+  }
+}

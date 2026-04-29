@@ -1,0 +1,103 @@
+component_id,method,approx_cook_min,can_cook_with_others,notes
+1,boil,18,true,1 cup rice : 2 cups water; low-medium heat after boil
+1,steam,20,false,Rinse until clear; use rice cooker or pot with tight lid
+2,boil,30,true,1 cup : 2.5 cups water; nutty aroma when done
+2,steam,35,false,Pre-soak 30 min to reduce cook time
+3,boil,15,true,1 cup : 2 cups water; rinse well first to remove bitterness
+4,boil,10,true,Al dente preferred; heavily salted water
+5,boil,5,true,Short boil; avoid overcooking — becomes mushy quickly
+6,steam,5,true,Pour boiling water over couscous 1:1; cover and rest 5 min
+7,boil,12,true,Pre-soak 20 min optional; nutty flavour when done
+8,boil,30,true,Pre-soak overnight reduces time to 20 min
+9,boil,10,true,No pre-soak needed; breaks down quickly
+10,boil,25,true,Canned: drain and heat 3 min; dried: soak 8 h then boil 60 min
+11,roast,25,false,Whole: 200°C 45 min; cubed: 200°C 25 min; toss with a little oil
+11,boil,15,true,Cubed; adds to broth well
+11,steam,20,true,Cubed; preserves colour
+12,boil,18,true,Cubed 2 cm; salted water; pierce-test for doneness
+12,roast,30,false,Wedges; 200°C; crispy exterior
+13,boil,35,true,1 cup : 3 cups water; chewy when done
+14,boil,45,true,1 cup : 3 cups water; distinctive nutty pop when done
+15,steam,5,true,Rice-size pieces; 3–5 min; do not overcook — mushy
+15,sauté,5,true,High heat; keep moving; slight browning adds flavour
+16,steam,5,true,Florets; retain green colour and crunch
+16,roast,20,false,200°C; toss with oil; char edges add flavour
+16,blanch,3,true,Bright green; ice bath immediately
+17,sauté,3,true,Wilt in pan; high heat; season after
+17,steam,4,true,Small portions wilt fast
+17,raw,0,true,Baby spinach works well raw in bowls
+18,sauté,5,true,Massage raw to soften; or quick high-heat sauté
+18,roast,15,false,Leaves: 180°C 10–12 min; crispy kale chips
+19,roast,20,false,Halved or whole; 200°C; skin chars slightly
+19,sauté,8,true,Strips; medium heat; sweeten as sugars caramelise
+19,raw,0,true,Sliced thinly; great crunch in bowls
+20,sauté,6,true,Rounds or half-rounds; medium heat; salt draws out moisture
+20,roast,15,false,Halved lengthwise; 200°C; cut side down
+20,grill,8,false,Strips or rounds; char marks add flavour
+21,roast,25,false,Rounds 1 cm; 200°C; toss with oil; caramelises well
+21,steam,8,true,Batons; slight sweetness preserved
+21,raw,0,true,Julienned; adds crunch and sweetness
+22,raw,0,true,Rounds or diced; no prep needed
+23,roast,15,false,Whole; 200°C; burst/caramelise for depth
+23,raw,0,true,Halved; fresh flavour in bowls
+24,sauté,8,true,High heat; single layer; do not crowd — steam instead of brown
+24,roast,20,false,200°C; quartered; deep umami flavour
+25,boil,5,true,Frozen; bring to boil 3–5 min; do not overcook
+26,roast,12,false,Kernels off cob; 200°C; slight char
+26,sauté,5,true,Kernels; high heat; 2–3 min
+27,raw,0,true,Whole or halved; crunchy fresh in bowls
+27,blanch,2,true,30 s; ice bath; retains snap
+28,sauté,5,true,Halved lengthwise; high heat; slight char
+28,steam,4,true,Whole leaves; do not overcook
+29,raw,0,true,Shredded or thinly sliced; great crunch
+29,sauté,6,true,Wedges; medium heat; slight caramelisation
+30,roast,25,false,Halved; 200°C; cut side down; caramelises and tenderises
+30,blanch,4,true,Whole small sprouts; ice bath; then pan-toss
+31,roast,15,false,200°C; toss with oil; tips char nicely
+31,blanch,4,true,Whole; ice bath; serve warm or cold
+31,grill,6,false,Whole; grill marks add flavour
+32,roast,35,false,Whole wrapped in foil: 200°C 60 min; cubed: 200°C 35 min
+33,roast,25,false,Cubed or halved; 200°C; absorbs oil well
+33,grill,10,false,Slices 1 cm; char adds smoky flavour
+34,steam,5,true,Whole pods; retain snap
+34,blanch,3,true,30 s; ice bath; bright green
+35,sauté,10,true,Rings; medium heat; softens and sweetens
+36,heat,2,true,Warm gently; do not boil — loses balance
+37,whisk_cold,0,true,Whisk all ingredients; thin with water if needed
+38,whisk_cold,0,true,Thin with lemon juice and water to desired consistency
+39,whisk_cold,0,true,Mix yogurt, cucumber, garlic, dill; refrigerate 30 min for best flavour
+40,blend_cold,2,true,Blitz parsley/capers/anchovies/oil; season to taste
+41,whisk_cold,0,true,Whisk PB, soy, lime, ginger; thin with hot water
+42,blend_cold,3,true,Blitz all; season with salt and vinegar
+43,whisk_cold,0,true,Shake or whisk; sesame oil added last
+44,whisk_cold,0,true,Emulsify olive oil into lemon juice; add herbs
+45,whisk_cold,0,true,Fold sriracha into mayo; adjust ratio to taste
+46,heat,3,true,Thin with a little water or stock; warm through
+47,blend_cold,5,true,Blitz roasted peppers, nuts, garlic, oil, vinegar
+48,blend_cold,2,true,Blitz avocado, lime juice, cilantro; use immediately
+49,heat,2,true,Warm gently with a splash of olive oil
+50,no_prep,0,true,Ready to use; dilute with lemon juice for a dressing
+51,toast,3,false,Dry skillet; medium heat; toss until golden — watch carefully
+52,no_prep,0,true,Packaged; ready to use
+53,crumble,0,true,Crumble from block; no prep needed
+54,no_prep,0,true,Slice or mash; keep stone in until service to slow browning
+55,boil,7,false,From cold water; 7 min = jammy yolk; ice bath 2 min
+56,grill,12,false,Thin breast: 6 min/side; rest 3 min before slicing
+56,pan_fry,12,false,Medium-high heat; cover first 6 min; slice against grain
+57,roast,25,false,200°C; press tofu dry first; toss with soy and oil; flip at 15 min
+57,pan_fry,10,false,Press dry; high heat; flip once; pressing gives crisp crust
+58,roast,25,false,200°C; pat dry; toss with oil and salt; shake at 15 min
+59,toast,5,false,Dry skillet or 160°C oven 5–8 min; cool before use
+60,no_prep,0,true,Roughly chop if large pieces preferred
+61,toast,4,false,Dry skillet; medium heat; remove when golden
+62,toast,5,false,Dry skillet or oven; stir frequently
+63,no_prep,0,true,Ready to use; no prep needed
+64,no_prep,0,true,Ready to use
+65,no_prep,0,true,Ready to use; drain brine
+66,no_prep,0,true,Ready to use; sprinkle generously
+67,no_prep,0,true,Ready to use
+68,grill,4,false,High heat; 2 min/side; should develop char marks and soften slightly
+68,pan_fry,4,false,Dry non-stick pan; high heat; golden crust
+69,no_prep,0,true,Slice or tear; ready to use
+70,pan_fry,8,false,Thin slices; medium-high heat; 4 min/side; golden crust
+70,roast,20,false,Slices; 200°C; toss with tamari and oil

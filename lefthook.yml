@@ -1,0 +1,25 @@
+# Lefthook — pre-commit format + lint on changed files only.
+# Install: `lefthook install` (run once per checkout).
+
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "web/**/*.{ts,tsx,js,jsx,json,css}"
+      run: cd web && pnpm exec biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+    ruff-lint:
+      glob: "server/**/*.py"
+      run: cd server && uv run ruff check --fix {staged_files}
+      stage_fixed: true
+    ruff-format:
+      glob: "server/**/*.py"
+      run: cd server && uv run ruff format {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        head -n1 "{1}" | grep -Eq '^(feat|fix|chore|docs|refactor|test|build|ci|perf|revert)(\(.+\))?!?: .+' \
+          || (echo "Commit message must follow Conventional Commits."; exit 1)

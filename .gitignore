@@ -1,0 +1,61 @@
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# --- Node / pnpm / Next ---
+node_modules/
+.next/
+.turbo/
+.vercel/
+out/
+.pnpm-store/
+pnpm-debug.log*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- TypeScript build info ---
+*.tsbuildinfo
+
+# --- Playwright ---
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+
+# --- Python / uv ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.uv-cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# --- Postgres local volumes ---
+.pgdata/
+
+# --- Generated artifacts ---
+# schema.d.ts is generated but committed (clean checkout type-checks); do NOT ignore.
+# openapi.json is an intermediate artifact; not committed.
+web/lib/api/openapi.json
+
+# --- Logs ---
+logs/
+*.log

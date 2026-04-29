@@ -1,0 +1,11 @@
+{
+  "name": "NutriRoll",
+  "short_name": "NutriRoll",
+  "description": "Roll a cheap, tasty bowl in seconds.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
+  "icons": []
+}

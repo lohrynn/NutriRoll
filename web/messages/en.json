@@ -1,0 +1,93 @@
+{
+  "app": {
+    "title": "NutriRoll",
+    "tagline": "Roll a cheap, tasty bowl in seconds."
+  },
+  "nav": {
+    "components": "Components"
+  },
+  "components": {
+    "title": "Components",
+    "subtitle": "Manage the bases, vegetables, sauces, and toppings used to roll bowls.",
+    "empty": "No components yet. Add the first one below.",
+    "loading": "Loading components…",
+    "loadError": "Could not load components: {message}",
+    "addNew": "Add component",
+    "filter": {
+      "all": "All categories",
+      "base": "Bases",
+      "vegetable": "Vegetables",
+      "sauce": "Sauces",
+      "topping": "Toppings"
+    },
+    "row": {
+      "blacklisted": "blacklisted",
+      "kcal": "{value} kcal/100g",
+      "portion": "Portion: {value} {unit}"
+    },
+    "form": {
+      "name": "Name",
+      "category": "Category",
+      "image_url": "Image URL (optional)",
+      "default_portion_value": "Default portion",
+      "default_portion_unit": "Unit",
+      "macros": "Macros per 100g",
+      "kcal": "kcal",
+      "carbs_g": "Carbs (g)",
+      "protein_g": "Protein (g)",
+      "fat_g": "Fat (g)",
+      "fiber_g": "Fiber (g)",
+      "default_cooking_method": "Default cooking method",
+      "cooking_methods": "Supported cooking methods",
+      "approx_minutes": "Approx. minutes",
+      "can_cook_with_others": "Can cook with others",
+      "notes": "Notes",
+      "flavor_tags": "Flavor tags (comma-separated)",
+      "dietary_tags": "Dietary tags (comma-separated)",
+      "allergens": "Allergens (comma-separated)",
+      "shelf_life_days": "Shelf life (days, optional)",
+      "blacklisted": "Blacklisted",
+      "submit": "Save component",
+      "submitting": "Saving…",
+      "addMethod": "Add cooking method",
+      "removeMethod": "Remove",
+      "errors": {
+        "required": "Required",
+        "submitFailed": "Could not save: {message}"
+      }
+    },
+    "category": {
+      "base": "Base",
+      "vegetable": "Vegetable",
+      "sauce": "Sauce",
+      "topping": "Topping"
+    },
+    "method": {
+      "boil": "Boil",
+      "steam": "Steam",
+      "blanch": "Blanch",
+      "pan_fry": "Pan-fry",
+      "roast": "Roast",
+      "air_fry": "Air-fry",
+      "grill": "Grill",
+      "bake": "Bake",
+      "toast": "Toast",
+      "raw": "Raw",
+      "no_prep": "No prep",
+      "blend_cold": "Blend (cold)",
+      "blend_hot": "Blend (hot)",
+      "heat": "Heat",
+      "whisk_cold": "Whisk (cold)",
+      "whisk_hot": "Whisk (hot)",
+      "reduce": "Reduce",
+      "saute_simmer": "Sauté & simmer",
+      "crumble": "Crumble",
+      "custom": "Custom"
+    },
+    "unit": {
+      "g": "g",
+      "ml": "ml",
+      "pc": "pc"
+    }
+  }
+}

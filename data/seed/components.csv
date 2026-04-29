@@ -1,0 +1,71 @@
+id,category,name,default_portion_value,default_portion_unit,kcal_per_100g,carbs_per_100g,protein_per_100g,fat_per_100g,fiber_per_100g,flavor_tags,dietary_tags,allergens,default_cooking_method,shelf_life_days,typical_availability,blacklisted
+1,Base,White Rice,150,g,130,28.2,2.7,0.3,0.4,savory|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,boil,730,year_round,false
+2,Base,Brown Rice,150,g,112,23.0,2.3,0.8,1.8,savory|earthy|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|whole-grain|high-fiber,,boil,730,year_round,false
+3,Base,Quinoa,150,g,120,21.3,4.4,1.9,2.8,nutty|earthy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein|whole-grain,,boil,730,year_round,false
+4,Base,Pasta,150,g,158,30.9,5.8,0.9,1.8,savory|mild,vegetarian|dairy-free|nut-free|soy-free|egg-free,,boil,730,year_round,false
+5,Base,Soba Noodles,150,g,99,21.4,4.8,0.1,0.0,savory|mild,vegetarian|dairy-free|nut-free|soy-free|egg-free,gluten,boil,730,year_round,false
+6,Base,Couscous,150,g,112,23.2,3.8,0.2,1.4,savory|mild,vegetarian|dairy-free|nut-free|soy-free|egg-free,gluten,steam,730,year_round,false
+7,Base,Bulgur,150,g,83,18.6,3.1,0.2,4.5,earthy|nutty,vegetarian|dairy-free|nut-free|soy-free|egg-free|whole-grain|high-fiber,gluten,boil,730,year_round,false
+8,Base,Farro,150,g,170,34.2,5.0,1.0,3.5,nutty|earthy|savory,vegetarian|dairy-free|nut-free|soy-free|egg-free|whole-grain,gluten,boil,730,year_round,false
+9,Base,Red Lentils,150,g,116,20.1,9.0,0.4,7.9,earthy|savory|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein|high-fiber,,boil,730,year_round,false
+10,Base,Chickpeas,150,g,164,27.4,8.9,2.6,7.6,nutty|savory,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein|high-fiber,,boil,365,year_round,false
+11,Base,Sweet Potato,150,g,86,20.1,1.6,0.1,3.0,sweet|earthy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-fiber,,roast,14,year_round,false
+12,Base,Potatoes,150,g,77,17.5,2.0,0.1,2.2,savory|earthy|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,boil,21,year_round,false
+13,Base,Pearl Barley,150,g,123,28.2,3.6,0.4,3.8,nutty|earthy,vegetarian|dairy-free|nut-free|soy-free|egg-free|whole-grain,gluten,boil,730,year_round,false
+14,Base,Wild Rice,150,g,101,21.3,4.0,0.3,1.8,earthy|nutty|savory,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-fiber,,boil,730,year_round,false
+15,Base,Cauliflower Rice,150,g,25,5.3,2.0,0.3,2.0,mild|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|low-carb,,steam,7,year_round,false
+16,Vegetable,Broccoli,120,g,34,6.6,2.8,0.4,2.6,savory|fresh|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-fiber,,steam,7,year_round,false
+17,Vegetable,Spinach,80,g,23,3.6,2.9,0.4,2.2,fresh|mild|earthy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,sauté,5,year_round,false
+18,Vegetable,Kale,80,g,49,8.8,4.3,0.9,3.6,bitter|earthy|bold,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-fiber,,sauté,7,year_round,false
+19,Vegetable,Bell Pepper,100,g,31,6.0,1.0,0.3,2.1,sweet|fresh|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,roast,10,year_round,false
+20,Vegetable,Zucchini,100,g,17,3.1,1.2,0.3,1.0,mild|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,sauté,7,year_round,false
+21,Vegetable,Carrot,80,g,41,9.6,0.9,0.2,2.8,sweet|earthy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,, roast,21,year_round,false
+22,Vegetable,Cucumber,80,g,15,3.6,0.7,0.1,0.5,fresh|mild|light,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|low-carb,,raw,10,year_round,false
+23,Vegetable,Cherry Tomatoes,100,g,18,3.9,0.9,0.2,1.2,tangy|sweet|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,roast,10,year_round,false
+24,Vegetable,Mushrooms,100,g,22,3.3,3.1,0.3,1.0,umami|earthy|savory,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,sauté,7,year_round,false
+25,Vegetable,Edamame,100,g,121,9.9,11.9,5.2,5.2,savory|mild|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|egg-free|high-protein|high-fiber,soy,boil,180,year_round,false
+26,Vegetable,Corn,100,g,86,19.0,3.3,1.2,2.7,sweet|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,roast,5,summer,false
+27,Vegetable,Snap Peas,80,g,42,7.6,2.8,0.2,2.6,sweet|fresh|crunchy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,raw,7,spring_summer,false
+28,Vegetable,Bok Choy,100,g,13,2.2,1.5,0.2,1.0,mild|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,sauté,5,year_round,false
+29,Vegetable,Red Cabbage,80,g,31,7.4,1.4,0.1,2.1,tangy|mild|earthy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,raw,21,year_round,false
+30,Vegetable,Brussels Sprouts,100,g,43,8.9,3.4,0.3,3.8,bitter|earthy|savory,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-fiber,,roast,10,autumn_winter,false
+31,Vegetable,Asparagus,80,g,20,3.9,2.2,0.1,2.1,fresh|savory|earthy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,roast,5,spring,false
+32,Vegetable,Beets,100,g,43,9.6,1.6,0.2,2.0,earthy|sweet,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,roast,21,year_round,false
+33,Vegetable,Eggplant,100,g,25,5.9,1.0,0.2,3.0,earthy|mild|umami,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,roast,7,summer,false
+34,Vegetable,Green Beans,100,g,31,7.1,1.8,0.1,3.4,fresh|mild|savory,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-fiber,,steam,7,summer,false
+35,Vegetable,Leek,80,g,61,14.2,1.5,0.3,1.8,savory|mild|sweet,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,sauté,14,autumn_winter,false
+36,Sauce,Teriyaki Sauce,40,g,89,21.0,1.5,0.0,0.0,savory|sweet|umami|bold,vegan|vegetarian|dairy-free|nut-free|egg-free,gluten|soy,heat,30,year_round,false
+37,Sauce,Miso-Ginger Dressing,40,g,85,10.0,2.0,4.0,0.5,savory|umami|tangy,vegan|vegetarian|dairy-free|nut-free|egg-free,soy|gluten,whisk_cold,14,year_round,false
+38,Sauce,Tahini Sauce,40,g,595,21.3,17.0,54.0,9.0,nutty|rich|savory,vegan|vegetarian|gluten-free|dairy-free|nut-free|egg-free,sesame,whisk_cold,30,year_round,false
+39,Sauce,Tzatziki,40,g,67,3.7,5.7,3.0,0.2,tangy|fresh|creamy,vegetarian|gluten-free|nut-free|soy-free|egg-free,dairy,whisk_cold,5,year_round,false
+40,Sauce,Salsa Verde,40,g,35,4.0,0.5,2.0,0.5,tangy|herby|fresh|bold,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,blend_cold,7,year_round,false
+41,Sauce,Peanut Sauce,40,g,158,11.0,6.0,11.0,1.5,nutty|savory|rich|bold,vegan|vegetarian|gluten-free|dairy-free|egg-free,nuts|soy,whisk_cold,14,year_round,false
+42,Sauce,Chimichurri,40,g,120,2.0,0.5,13.0,0.5,herby|bold|tangy|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,blend_cold,7,year_round,false
+43,Sauce,Soy-Sesame Dressing,40,g,120,8.0,2.0,9.0,0.3,savory|umami|nutty|bold,vegan|vegetarian|dairy-free|nut-free|egg-free,soy|sesame,whisk_cold,30,year_round,false
+44,Sauce,Lemon-Herb Dressing,40,g,130,3.0,0.3,13.0,0.2,citrusy|herby|fresh|tangy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,whisk_cold,14,year_round,false
+45,Sauce,Sriracha Mayo,30,g,200,6.0,0.5,20.0,0.0,spicy|creamy|bold,vegetarian|gluten-free|nut-free|soy-free,egg,whisk_cold,30,year_round,false
+46,Sauce,Gochujang Sauce,30,g,50,10.0,2.0,0.5,0.5,spicy|savory|sweet|bold,vegan|vegetarian|dairy-free|nut-free|egg-free,gluten|soy,heat,60,year_round,false
+47,Sauce,Romesco Sauce,40,g,110,7.0,2.0,9.0,1.5,smoky|bold|rich|nutty,vegan|vegetarian|gluten-free|dairy-free|egg-free,nuts,blend_cold,7,year_round,false
+48,Sauce,Avocado-Lime Sauce,40,g,160,9.0,2.0,15.0,6.7,fresh|creamy|citrusy|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,blend_cold,2,year_round,false
+49,Sauce,Harissa,30,g,45,5.0,1.0,3.0,1.0,spicy|smoky|bold,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,heat,60,year_round,false
+50,Sauce,Hummus,40,g,166,14.3,7.9,9.6,6.0,nutty|savory|creamy|earthy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein,sesame,no_prep,10,year_round,false
+51,Topping,Sesame Seeds,10,g,565,23.4,17.0,48.0,11.6,nutty|savory,vegan|vegetarian|gluten-free|dairy-free|soy-free|egg-free,sesame,toast,365,year_round,false
+52,Topping,Crispy Fried Onions,15,g,467,46.8,8.0,29.0,2.7,savory|sweet|crunchy,vegetarian|dairy-free|nut-free|soy-free|egg-free,gluten,no_prep,90,year_round,false
+53,Topping,Feta Cheese,30,g,264,4.1,14.0,21.0,0.0,tangy|salty|creamy,vegetarian|gluten-free|nut-free|soy-free|egg-free,dairy,crumble,14,year_round,false
+54,Topping,Avocado,50,g,160,8.5,2.0,14.7,6.7,creamy|mild|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,no_prep,3,year_round,false
+55,Topping,Soft-Boiled Egg,50,g,155,1.1,13.0,11.0,0.0,savory|rich|mild,vegetarian|gluten-free|dairy-free|nut-free|soy-free,egg,boil,7,year_round,false
+56,Topping,Grilled Chicken,100,g,165,0.0,31.0,3.6,0.0,savory|smoky|mild,gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein,,grill,3,year_round,false
+57,Topping,Baked Tofu,80,g,144,3.0,17.0,8.7,1.0,savory|umami|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|egg-free|high-protein,soy,roast,5,year_round,false
+58,Topping,Crispy Chickpeas,30,g,164,27.4,8.9,2.6,7.6,nutty|savory|crunchy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein|high-fiber,,roast,3,year_round,false
+59,Topping,Almonds,15,g,579,21.6,21.2,49.9,12.5,nutty|sweet|crunchy,vegan|vegetarian|gluten-free|dairy-free|soy-free|egg-free,nuts,toast,365,year_round,false
+60,Topping,Walnuts,15,g,654,13.7,15.2,65.2,6.7,nutty|bitter|earthy,vegan|vegetarian|gluten-free|dairy-free|soy-free|egg-free|high-fiber,nuts,no_prep,180,year_round,false
+61,Topping,Sunflower Seeds,10,g,584,20.0,20.8,51.5,8.6,nutty|mild,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,sesame,toast,365,year_round,false
+62,Topping,Pumpkin Seeds,10,g,559,10.7,30.2,49.1,6.0,nutty|earthy|savory,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein,sesame,toast,365,year_round,false
+63,Topping,Pomegranate Seeds,30,g,83,18.7,1.7,1.2,4.0,sweet|tangy|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free|high-fiber,,no_prep,7,autumn_winter,false
+64,Topping,Dried Cranberries,15,g,308,82.4,0.1,1.4,5.3,sweet|tangy,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,no_prep,365,year_round,false
+65,Topping,Pickled Ginger,10,g,20,4.8,0.2,0.0,0.5,tangy|spicy|fresh,vegan|vegetarian|gluten-free|dairy-free|nut-free|soy-free|egg-free,,no_prep,180,year_round,false
+66,Topping,Furikake,5,g,200,20.0,14.0,6.0,1.0,savory|umami|salty,vegetarian|dairy-free|nut-free,soy|fish|sesame,no_prep,180,year_round,false
+67,Topping,Croutons,20,g,407,63.0,12.0,13.0,3.5,savory|crunchy|mild,vegetarian|nut-free|soy-free|egg-free,gluten|dairy,no_prep,30,year_round,false
+68,Topping,Halloumi,40,g,321,2.0,20.0,26.0,0.0,salty|savory|rich,vegetarian|gluten-free|nut-free|soy-free|egg-free,dairy,grill,14,year_round,false
+69,Topping,Smoked Salmon,50,g,117,0.0,18.0,4.3,0.0,savory|smoky|rich|umami,gluten-free|dairy-free|nut-free|soy-free|egg-free|high-protein,fish,no_prep,5,year_round,false
+70,Topping,Tempeh,80,g,193,9.4,19.0,11.0,4.3,savory|nutty|earthy|bold,vegan|vegetarian|gluten-free|dairy-free|nut-free|egg-free|high-protein,soy,pan_fry,10,year_round,false
