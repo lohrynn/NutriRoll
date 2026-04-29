@@ -308,3 +308,126 @@ def test_extra_weights_round_trip_and_validation() -> None:
         FeatureWeights(extra_weights={"novelty": 0.1})
     with pytest.raises(ValueError, match="non-empty"):
         FeatureWeights(extra_weights={" ": 0.1})
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 — per-meal macro targets
+# ---------------------------------------------------------------------------
+
+
+def _macro_pool() -> list[Component]:
+    """Two BASE components with a clear protein gap. Used to assert that
+    targets steer selection toward the higher-protein candidate.
+    """
+    high = _component_of(Category.BASE, name="HighProtein", minutes=5)
+    low = _component_of(Category.BASE, name="LowProtein", minutes=5)
+    # Mutate macros via dataclass replace pattern (frozen).
+    high = Component(
+        id=high.id,
+        category=high.category,
+        name=high.name,
+        macros_per_100g=Macros(kcal=200, carbs_g=5, protein_g=40, fat_g=10, fiber_g=0),
+        default_portion=high.default_portion,
+        default_cooking_method=high.default_cooking_method,
+        cooking_methods=high.cooking_methods,
+        flavor_tags=high.flavor_tags,
+        dietary_tags=high.dietary_tags,
+        allergens=high.allergens,
+        blacklisted=high.blacklisted,
+    )
+    low = Component(
+        id=low.id,
+        category=low.category,
+        name=low.name,
+        macros_per_100g=Macros(kcal=120, carbs_g=20, protein_g=5, fat_g=3, fiber_g=2),
+        default_portion=low.default_portion,
+        default_cooking_method=low.default_cooking_method,
+        cooking_methods=low.cooking_methods,
+        flavor_tags=low.flavor_tags,
+        dietary_tags=low.dietary_tags,
+        allergens=low.allergens,
+        blacklisted=low.blacklisted,
+    )
+    return [high, low]
+
+
+def test_macro_target_min_prefers_higher_protein_component() -> None:
+    """A min protein target should rank the high-protein component higher."""
+    from nutriroll.domain.roll import MacroTarget, MacroTargets, score_component
+
+    pool = _macro_pool()
+    high, low = pool[0], pool[1]
+    req = RollRequest(
+        slots=(SlotSpec(category=Category.BASE),),
+        macro_targets=MacroTargets(protein_g=MacroTarget(value=50, mode="min")),
+    )
+    high_score, _ = score_component(high, req)
+    low_score, _ = score_component(low, req)
+    assert high_score > low_score
+
+
+def test_macro_target_max_penalises_high_fat_component() -> None:
+    from nutriroll.domain.roll import MacroTarget, MacroTargets, score_component
+
+    pool = _macro_pool()
+    high, low = pool[0], pool[1]  # high has fat=10, low has fat=3
+    req = RollRequest(
+        slots=(SlotSpec(category=Category.BASE),),
+        macro_targets=MacroTargets(fat_g=MacroTarget(value=5, mode="max")),
+    )
+    high_score, high_contrib = score_component(high, req)
+    low_score, low_contrib = score_component(low, req)
+    # Low-fat component must score the macro feature at least as well as high-fat.
+    assert low_contrib["macro_target_fit"] >= high_contrib["macro_target_fit"]
+    assert low_score >= high_score
+
+
+def test_no_macro_targets_means_neutral_contribution() -> None:
+    """Regression guard: omitting macro_targets keeps existing behaviour."""
+    from nutriroll.domain.roll import score_component
+
+    c = _macro_pool()[0]
+    req = RollRequest(slots=(SlotSpec(category=Category.BASE),))
+    _, contrib = score_component(c, req)
+    assert contrib["macro_target_fit"] == 0.0
+
+
+def test_macro_target_validation() -> None:
+    from nutriroll.domain.roll import MacroTarget, MacroTargets
+
+    with pytest.raises(ValueError, match="value must be >= 0"):
+        MacroTarget(value=-1)
+    with pytest.raises(ValueError, match=r"invalid MacroTarget\.mode"):
+        MacroTarget(value=10, mode="exact")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="clashes with a well-known field"):
+        MacroTargets(extra=(("kcal", MacroTarget(value=1)),))
+
+
+# ---------------------------------------------------------------------------
+# Phase 12 — portions metadata
+# ---------------------------------------------------------------------------
+
+
+def test_portions_default_and_validation() -> None:
+    req = RollRequest(slots=(SlotSpec(category=Category.BASE),))
+    assert req.portions == 1
+    with pytest.raises(ValueError, match=r"portions must be in \[1, 14\]"):
+        RollRequest(slots=(SlotSpec(category=Category.BASE),), portions=0)
+    with pytest.raises(ValueError, match=r"portions must be in \[1, 14\]"):
+        RollRequest(slots=(SlotSpec(category=Category.BASE),), portions=15)
+
+
+def test_portions_does_not_change_rolled_components() -> None:
+    """Phase 12 guarantee: portions is metadata; roll outcome is unchanged."""
+    base_req = RollRequest(
+        slots=(SlotSpec(category=Category.BASE), SlotSpec(category=Category.VEGETABLE)),
+        seed=99,
+    )
+    prep_req = RollRequest(
+        slots=base_req.slots,
+        seed=99,
+        portions=4,
+    )
+    a = roll(_sample_pool(), base_req)
+    b = roll(_sample_pool(), prep_req)
+    assert [s.component.name for s in a.slots] == [s.component.name for s in b.slots]

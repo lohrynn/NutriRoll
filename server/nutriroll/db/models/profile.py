@@ -25,3 +25,8 @@ class UserProfileRow(Base):
     roll_weights: Mapped[dict[Any, Any] | None] = mapped_column(JSON, nullable=True, default=None)
     """JSON map of weight name → float. NULL = user hasn't set custom weights.
     Stored as JSONB on Postgres (see migration 0007); JSON here for SQLite test compat."""
+    default_macro_targets: Mapped[dict[Any, Any] | None] = mapped_column(
+        JSON, nullable=True, default=None
+    )
+    """JSON map of macro name → ``{value, mode}``. NULL = user hasn't set defaults.
+    Stored as JSONB on Postgres (see migration 0008); JSON here for SQLite test compat."""

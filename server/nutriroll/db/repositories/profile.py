@@ -2,20 +2,35 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nutriroll.db.models.profile import UserProfileRow
 from nutriroll.domain.profile import UserProfile
+from nutriroll.domain.roll import MacroMode
 
 PROFILE_ID = 1
 
 
 def _to_domain(row: UserProfileRow) -> UserProfile:
     raw_allergens = row.allergens or []
-    raw_weights: dict[str, float] = (
-        {k: float(v) for k, v in (row.roll_weights or {}).items()}
-    )
+    raw_weights: dict[str, float] = {k: float(v) for k, v in (row.roll_weights or {}).items()}
+    raw_targets = row.default_macro_targets or {}
+    target_triples: list[tuple[str, float, MacroMode]] = []
+    for name, payload in raw_targets.items():
+        if not isinstance(payload, dict):
+            continue
+        payload_dict: dict[str, Any] = dict(payload)  # type: ignore[arg-type]
+        value = float(payload_dict.get("value", 0.0))
+        raw_mode = str(payload_dict.get("mode", "target"))
+        mode: MacroMode = (
+            raw_mode  # type: ignore[assignment]
+            if raw_mode in ("target", "min", "max")
+            else "target"
+        )
+        target_triples.append((str(name), value, mode))
     return UserProfile(
         dietary_mode=row.dietary_mode,
         allergens=tuple(str(a) for a in raw_allergens),
@@ -24,6 +39,7 @@ def _to_domain(row: UserProfileRow) -> UserProfile:
         locale=row.locale,
         onboarded=row.onboarded,
         roll_weights=tuple(raw_weights.items()),
+        default_macro_targets=tuple(target_triples),
     )
 
 
@@ -47,6 +63,14 @@ class UserProfileRepository:
         weights_json: dict[str, float] | None = (
             dict(profile.roll_weights) if profile.roll_weights else None
         )
+        targets_json: dict[str, dict[str, str | float]] | None = (
+            {
+                name: {"value": value, "mode": mode}
+                for name, value, mode in profile.default_macro_targets
+            }
+            if profile.default_macro_targets
+            else None
+        )
         stmt = (
             pg_insert(UserProfileRow)
             .values(
@@ -58,6 +82,7 @@ class UserProfileRepository:
                 locale=profile.locale,
                 onboarded=profile.onboarded,
                 roll_weights=weights_json,
+                default_macro_targets=targets_json,
             )
             .on_conflict_do_update(
                 index_elements=["id"],
@@ -69,6 +94,7 @@ class UserProfileRepository:
                     "locale": profile.locale,
                     "onboarded": profile.onboarded,
                     "roll_weights": weights_json,
+                    "default_macro_targets": targets_json,
                 },
             )
         )

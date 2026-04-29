@@ -14,11 +14,13 @@ import math
 import random
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, Literal
 from uuid import UUID
 
 from nutriroll.domain.category_meta import BALANCED_TARGETS
-from nutriroll.domain.component import Category, Component, CookingMethod
+from nutriroll.domain.component import Category, Component, CookingMethod, PortionUnit
+
+MacroMode = Literal["target", "min", "max"]
 
 # ---------------------------------------------------------------------------
 # Inputs / outputs
@@ -57,6 +59,7 @@ class FeatureWeights:
     time_fit: float = 0.10
     pantry_bonus: float = 0.05
     direction_match: float = 0.25
+    macro_target_fit: float = 0.5
     extra_weights: Mapping[str, float] = field(default_factory=dict[str, float])
 
     WELL_KNOWN_KEYS: ClassVar[tuple[str, ...]] = (
@@ -67,6 +70,7 @@ class FeatureWeights:
         "time_fit",
         "pantry_bonus",
         "direction_match",
+        "macro_target_fit",
     )
 
     def __post_init__(self) -> None:
@@ -87,6 +91,88 @@ class FeatureWeights:
 
 
 @dataclass(frozen=True, slots=True)
+class MacroTarget:
+    """A single per-portion macro constraint (Phase 11).
+
+    ``mode`` controls how the algorithm scores deviation:
+      * ``"target"`` — closest to ``value`` wins (triangular penalty).
+      * ``"min"``    — only penalise *below* ``value`` (e.g. >=50 g protein).
+      * ``"max"``    — only penalise *above* ``value`` (e.g. <=30 g fat).
+    """
+
+    value: float
+    mode: MacroMode = "target"
+
+    def __post_init__(self) -> None:
+        if self.value < 0:
+            raise ValueError(f"MacroTarget.value must be >= 0, got {self.value}")
+        if self.mode not in ("target", "min", "max"):
+            raise ValueError(f"invalid MacroTarget.mode: {self.mode!r}")
+
+
+@dataclass(frozen=True, slots=True)
+class MacroTargets:
+    """Per-portion macro targets for a single rolled bowl (Phase 11).
+
+    Each well-known field is optional — ``None`` means "no preference" for
+    that macro and the algorithm ignores it. Unknown macro keys round-trip
+    through ``extra`` so a forward-compat target like ``sodium_mg`` flows
+    end-to-end without schema changes (mirrors :class:`Macros`).
+    """
+
+    kcal: MacroTarget | None = None
+    protein_g: MacroTarget | None = None
+    carbs_g: MacroTarget | None = None
+    fat_g: MacroTarget | None = None
+    fiber_g: MacroTarget | None = None
+    extra: tuple[tuple[str, MacroTarget], ...] = ()
+
+    WELL_KNOWN_KEYS: ClassVar[tuple[str, ...]] = (
+        "kcal",
+        "protein_g",
+        "carbs_g",
+        "fat_g",
+        "fiber_g",
+    )
+
+    def __post_init__(self) -> None:
+        seen: set[str] = set()
+        for key, _ in self.extra:
+            if not key or not key.strip():
+                raise ValueError("extra macro target keys must be non-empty")
+            if key in self.WELL_KNOWN_KEYS:
+                raise ValueError(f"extra macro target {key!r} clashes with a well-known field")
+            if key in seen:
+                raise ValueError(f"duplicate extra macro target {key!r}")
+            seen.add(key)
+
+    def as_mapping(self) -> dict[str, MacroTarget]:
+        """Flat name → MacroTarget mapping for *set* targets only."""
+        out: dict[str, MacroTarget] = {}
+        for key in self.WELL_KNOWN_KEYS:
+            v: MacroTarget | None = getattr(self, key)
+            if v is not None:
+                out[key] = v
+        for key, v in self.extra:
+            out[key] = v
+        return out
+
+    @classmethod
+    def from_mapping(cls, data: Mapping[str, MacroTarget]) -> MacroTargets:
+        kwargs: dict[str, MacroTarget | None] = {k: None for k in cls.WELL_KNOWN_KEYS}
+        extras: list[tuple[str, MacroTarget]] = []
+        for key, v in data.items():
+            if key in cls.WELL_KNOWN_KEYS:
+                kwargs[key] = v
+            else:
+                extras.append((key, v))
+        return cls(**kwargs, extra=tuple(extras))
+
+    def is_empty(self) -> bool:
+        return not self.as_mapping()
+
+
+@dataclass(frozen=True, slots=True)
 class RollRequest:
     slots: tuple[SlotSpec, ...]
     dietary_mode: str | None = None
@@ -99,6 +185,14 @@ class RollRequest:
     recent_component_ids: frozenset[UUID] = field(default_factory=frozenset[UUID])
     weights: FeatureWeights = field(default_factory=FeatureWeights)
     tag_boosts: Mapping[str, float] = field(default_factory=dict[str, float])
+    macro_targets: MacroTargets | None = None
+    """Phase 11. Per-portion macro constraints. ``None`` = no preference;
+    the algorithm falls back to the generic ``BALANCED_TARGETS``-based
+    ``nutrition_fit`` feature only."""
+    portions: int = 1
+    """Phase 12 — meal-prep batch size. Does not change which components are
+    rolled (targets stay per-portion); used by the recipe / shopping / planner
+    surfaces to scale grams and track remaining portions."""
     # IDs of components currently in the user's pantry. Boosts ``pantry_bonus``.
     pantry_component_ids: frozenset[UUID] = field(default_factory=frozenset[UUID])
     # Subset of ``pantry_component_ids`` that are about to expire (within
@@ -120,6 +214,8 @@ class RollRequest:
                 raise ValueError(f"tag_boosts[{tag!r}] must be in [-1, 1], got {boost}")
         if not self.expiring_component_ids.issubset(self.pantry_component_ids):
             raise ValueError("expiring_component_ids must be a subset of pantry_component_ids")
+        if self.portions < 1 or self.portions > 14:
+            raise ValueError(f"portions must be in [1, 14], got {self.portions}")
 
 
 @dataclass(frozen=True, slots=True)
@@ -271,6 +367,56 @@ def _direction_match(component: Component, boosts: Mapping[str, float]) -> float
     return max(-1.0, min(1.0, total))
 
 
+def _portion_grams(component: Component) -> float:
+    """Component portion expressed in grams, or 0 if unit is not gram-based."""
+    if component.default_portion.unit is PortionUnit.GRAM:
+        return component.default_portion.value
+    return 0.0
+
+
+def _macro_target_fit(
+    component: Component,
+    targets: MacroTargets | None,
+    n_slots: int,
+) -> float:
+    """Phase 11. Per-portion fit of *this* component vs the user's targets.
+
+    The component contributes ``macros_per_100g * portion_g / 100`` to the
+    bowl per portion. We compare that single-slot contribution against the
+    *fair share* of each target, ``target / n_slots``, so that the algorithm
+    rewards components that pull the bowl toward the target.
+
+    Returns 0.0 (neutral) when ``targets`` is None / empty so the existing
+    behaviour is preserved when the user sets no preference.
+    """
+    if targets is None or n_slots <= 0:
+        return 0.0
+    mapping = targets.as_mapping()
+    if not mapping:
+        return 0.0
+    factor = _portion_grams(component) / 100.0
+    macros = component.macros_per_100g.as_dict()
+    total = 0.0
+    count = 0
+    for name, target in mapping.items():
+        actual = macros.get(name, 0.0) * factor
+        share = target.value / n_slots
+        if share <= 0:
+            # User asked for 0 of something — only "max"/"target" make sense.
+            fit = 1.0 if target.mode == "min" or actual <= 0 else 0.0
+        elif target.mode == "target":
+            dist = abs(actual - share) / share
+            fit = max(0.0, 1.0 - dist)
+        elif target.mode == "min":
+            fit = min(1.0, actual / share)
+        else:  # "max"
+            over = max(0.0, actual - share)
+            fit = max(0.0, 1.0 - over / share)
+        total += fit
+        count += 1
+    return total / count if count else 0.0
+
+
 def score_component(
     component: Component,
     request: RollRequest,
@@ -281,6 +427,8 @@ def score_component(
     f_time = _time_fit(component, request.time_budget_min)
     f_novelty = _novelty(component, request.recent_component_ids)
     f_direction = _direction_match(component, request.tag_boosts)
+    n_slots = sum(s.count for s in request.slots) or 1
+    f_macro = _macro_target_fit(component, request.macro_targets, n_slots)
     # taste_match / price_fit require profile data we don't have in v1 —
     # treat as neutral 0.5 so weights still influence ordering if dialed up.
     if component.id in request.expiring_component_ids:
@@ -297,6 +445,7 @@ def score_component(
         "price_fit": w.price_fit * 0.5,
         "pantry_bonus": w.pantry_bonus * f_pantry,
         "direction_match": w.direction_match * f_direction,
+        "macro_target_fit": w.macro_target_fit * f_macro,
     }
     return sum(contributions.values()), contributions
 
@@ -380,6 +529,8 @@ def _top_reasons(
                 out.append(f"matches your direction ({', '.join(matched[:2])})")
             else:
                 out.append("matches the direction you picked")
+        elif name == "macro_target_fit":
+            out.append("helps hit your nutrition targets")
     return tuple(out)
 
 
@@ -511,6 +662,8 @@ def reroll_slot(
         recent_component_ids=request.recent_component_ids,
         weights=request.weights,
         tag_boosts=request.tag_boosts,
+        macro_targets=request.macro_targets,
+        portions=request.portions,
         temperature=request.temperature,
         seed=request.seed,
     )
@@ -524,6 +677,9 @@ __all__ = [
     "ChosenComponent",
     "EmptyCandidatePoolError",
     "FeatureWeights",
+    "MacroMode",
+    "MacroTarget",
+    "MacroTargets",
     "RollRequest",
     "RolledBowl",
     "SlotSpec",

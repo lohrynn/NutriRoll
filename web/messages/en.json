@@ -89,6 +89,7 @@
     "planSlot": "Meal slot",
     "forceBaseMethod": "Force base method",
     "forceBaseMethodAny": "Any method",
+    "portions": "Portions (meal-prep)",
     "savePrompt": "Name this saved meal:",
     "error": "Couldn't roll a bowl: {message}",
     "dietary": {
@@ -130,6 +131,25 @@
       "protein": "Protein {value} g",
       "fat": "Fat {value} g",
       "fiber": "Fiber {value} g"
+    },
+    "nutritionTargets": {
+      "title": "Nutrition targets",
+      "subtitle": "Per-portion targets the algorithm will try to hit.",
+      "clear": "Clear all",
+      "mode": {
+        "target": "=",
+        "min": "≥",
+        "max": "≤"
+      },
+      "met": "on target",
+      "missed": "off target",
+      "macros": {
+        "kcal": "Calories (kcal)",
+        "protein_g": "Protein (g)",
+        "carbs_g": "Carbs (g)",
+        "fat_g": "Fat (g)",
+        "fiber_g": "Fiber (g)"
+      }
     }
   },
   "recipe": {
@@ -386,6 +406,8 @@
     "changeSlot": "Change meal slot",
     "undo": "Undo",
     "delete": "Delete planned meal",
+    "markEaten": "Mark a portion eaten",
+    "portions": "{remaining} of {total} portions left",
     "hint": "Roll a bowl, tap \"Plan today\" to add it to your week.",
     "slot": {
       "breakfast": "Breakfast",
@@ -470,8 +492,15 @@
         "nutrition_fit": "Nutrition fit",
         "time_fit": "Time fit",
         "pantry_bonus": "Pantry bonus",
-        "direction_match": "Direction match"
+        "direction_match": "Direction match",
+        "macro_target_fit": "Macro target fit"
       }
+    },
+    "defaultNutritionTargets": {
+      "title": "Default nutrition targets",
+      "body": "Per-portion targets the Roll page seeds into every roll.",
+      "save": "Save targets",
+      "saved": "Saved."
     },
     "blacklist": {
       "title": "Blacklisted components",

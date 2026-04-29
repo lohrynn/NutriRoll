@@ -6,7 +6,7 @@ layer framework-free; conversions happen at the boundary.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -23,6 +23,8 @@ from nutriroll.domain.direction import (
 from nutriroll.domain.roll import (
     ChosenComponent,
     FeatureWeights,
+    MacroTarget,
+    MacroTargets,
     RolledBowl,
     RollRequest,
     SlotSpec,
@@ -63,6 +65,7 @@ class FeatureWeightsSchema(BaseModel):
     time_fit: float = Field(default=0.10, ge=0)
     pantry_bonus: float = Field(default=0.05, ge=0)
     direction_match: float = Field(default=0.25, ge=0)
+    macro_target_fit: float = Field(default=0.5, ge=0)
 
 
 class FlavorAxesSchema(BaseModel):
@@ -70,6 +73,68 @@ class FlavorAxesSchema(BaseModel):
 
     bold_to_mild: float = Field(default=0.0, ge=-1, le=1)
     heavy_to_light: float = Field(default=0.0, ge=-1, le=1)
+
+
+class MacroTargetSchema(BaseModel):
+    """A single per-portion macro target (Phase 11)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    value: float = Field(ge=0)
+    mode: Literal["target", "min", "max"] = "target"
+
+    def to_domain(self) -> MacroTarget:
+        return MacroTarget(value=self.value, mode=self.mode)
+
+    @classmethod
+    def from_domain(cls, t: MacroTarget) -> MacroTargetSchema:
+        return cls(value=t.value, mode=t.mode)
+
+
+class MacroTargetsSchema(BaseModel):
+    """Per-portion macro targets (Phase 11).
+
+    All fields optional. ``extra="allow"`` lets forward-compat macros
+    (e.g. ``sodium_mg``) round-trip without a schema bump — mirrors the
+    pattern on :class:`MacrosSchema` (modularity-audit M1).
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    kcal: MacroTargetSchema | None = None
+    protein_g: MacroTargetSchema | None = None
+    carbs_g: MacroTargetSchema | None = None
+    fat_g: MacroTargetSchema | None = None
+    fiber_g: MacroTargetSchema | None = None
+
+    def to_domain(self) -> MacroTargets:
+        mapping: dict[str, MacroTarget] = {}
+        for key in MacroTargets.WELL_KNOWN_KEYS:
+            v: MacroTargetSchema | None = getattr(self, key)
+            if v is not None:
+                mapping[key] = v.to_domain()
+        for key, raw in (self.model_extra or {}).items():
+            if raw is None:
+                continue
+            try:
+                parsed = MacroTargetSchema.model_validate(raw)
+            except Exception as exc:
+                raise ValueError(f"extra macro target {key!r} is invalid") from exc
+            mapping[key] = parsed.to_domain()
+        return MacroTargets.from_mapping(mapping)
+
+    @classmethod
+    def from_domain(cls, t: MacroTargets) -> MacroTargetsSchema:
+        kwargs: dict[str, MacroTargetSchema | None] = {
+            k: None for k in MacroTargets.WELL_KNOWN_KEYS
+        }
+        extras: dict[str, MacroTargetSchema] = {}
+        for key, target in t.as_mapping().items():
+            if key in MacroTargets.WELL_KNOWN_KEYS:
+                kwargs[key] = MacroTargetSchema.from_domain(target)
+            else:
+                extras[key] = MacroTargetSchema.from_domain(target)
+        return cls(**kwargs, **extras)
 
 
 class DirectionSchema(BaseModel):
@@ -111,6 +176,8 @@ class RollRequestSchema(BaseModel):
     weights: FeatureWeightsSchema = Field(default_factory=FeatureWeightsSchema)
     direction: DirectionSchema = Field(default_factory=DirectionSchema)
     tag_boosts: dict[str, float] = Field(default_factory=dict[str, float])
+    macro_targets: MacroTargetsSchema | None = None
+    portions: int = Field(default=1, ge=1, le=14)
     temperature: float = Field(default=0.5, gt=0, le=5)
     seed: int | None = None
 
@@ -136,9 +203,12 @@ class RollRequestSchema(BaseModel):
                 time_fit=self.weights.time_fit,
                 pantry_bonus=self.weights.pantry_bonus,
                 direction_match=self.weights.direction_match,
+                macro_target_fit=self.weights.macro_target_fit,
                 extra_weights=_collect_extra_weights(self.weights),
             ),
             tag_boosts=boosts,
+            macro_targets=self.macro_targets.to_domain() if self.macro_targets else None,
+            portions=self.portions,
             temperature=self.temperature,
             seed=self.seed,
         )
@@ -186,6 +256,8 @@ __all__ = [
     "DirectionSchema",
     "FeatureWeightsSchema",
     "FlavorAxesSchema",
+    "MacroTargetSchema",
+    "MacroTargetsSchema",
     "RerollSlotRequestSchema",
     "RollRequestSchema",
     "RolledBowlSchema",

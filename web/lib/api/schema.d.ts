@@ -200,6 +200,23 @@ export interface paths {
         patch: operations["update_planned_v1_planned__meal_id__patch"];
         trace?: never;
     };
+    "/v1/planned/{meal_id}/mark-eaten": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one portion of a meal-prep batch as eaten (Phase 12) */
+        post: operations["mark_planned_eaten_v1_planned__meal_id__mark_eaten_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ratings": {
         parameters: {
             query?: never;
@@ -555,6 +572,11 @@ export interface components {
              */
             direction_match: number;
             /**
+             * Macro Target Fit
+             * @default 0.5
+             */
+            macro_target_fit: number;
+            /**
              * Novelty
              * @default 0.2
              */
@@ -651,6 +673,37 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * MacroTargetSchema
+         * @description A single per-portion macro target (Phase 11).
+         */
+        MacroTargetSchema: {
+            /**
+             * Mode
+             * @default target
+             * @enum {string}
+             */
+            mode: "target" | "min" | "max";
+            /** Value */
+            value: number;
+        };
+        /**
+         * MacroTargetsSchema
+         * @description Per-portion macro targets (Phase 11).
+         *
+         *     All fields optional. ``extra="allow"`` lets forward-compat macros
+         *     (e.g. ``sodium_mg``) round-trip without a schema bump — mirrors the
+         *     pattern on :class:`MacrosSchema` (modularity-audit M1).
+         */
+        MacroTargetsSchema: {
+            carbs_g?: components["schemas"]["MacroTargetSchema"] | null;
+            fat_g?: components["schemas"]["MacroTargetSchema"] | null;
+            fiber_g?: components["schemas"]["MacroTargetSchema"] | null;
+            kcal?: components["schemas"]["MacroTargetSchema"] | null;
+            protein_g?: components["schemas"]["MacroTargetSchema"] | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** MacrosSchema */
         MacrosSchema: {
             /** Carbs G */
@@ -735,6 +788,11 @@ export interface components {
              * Format: date
              */
             planned_for: string;
+            /**
+             * Portions Total
+             * @default 1
+             */
+            portions_total: number;
             slot: components["schemas"]["MealSlot"];
             /** @default planned */
             status: components["schemas"]["PlannedStatus"];
@@ -766,6 +824,10 @@ export interface components {
              * Format: date
              */
             planned_for: string;
+            /** Portions Remaining */
+            portions_remaining: number;
+            /** Portions Total */
+            portions_total: number;
             slot: components["schemas"]["MealSlot"];
             status: components["schemas"]["PlannedStatus"];
             /** Updated At */
@@ -939,6 +1001,12 @@ export interface components {
             forced_methods?: {
                 [key: string]: components["schemas"]["CookingMethod"];
             };
+            macro_targets?: components["schemas"]["MacroTargetsSchema"] | null;
+            /**
+             * Portions
+             * @default 1
+             */
+            portions: number;
             /** Recent Component Ids */
             recent_component_ids?: string[];
             /** Seed */
@@ -1088,6 +1156,10 @@ export interface components {
         UserProfileRead: {
             /** Allergens */
             allergens: string[];
+            /** Default Macro Targets */
+            default_macro_targets: {
+                [key: string]: components["schemas"]["MacroTargetSchema"];
+            };
             /** Default Time Budget Min */
             default_time_budget_min: number | null;
             /**
@@ -1110,6 +1182,10 @@ export interface components {
         UserProfileUpdate: {
             /** Allergens */
             allergens?: string[];
+            /** Default Macro Targets */
+            default_macro_targets?: {
+                [key: string]: components["schemas"]["MacroTargetSchema"];
+            };
             /** Default Time Budget Min */
             default_time_budget_min?: number | null;
             /**
@@ -1734,6 +1810,37 @@ export interface operations {
                 "application/json": components["schemas"]["PlannedMealUpdate"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedMealRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_planned_eaten_v1_planned__meal_id__mark_eaten_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                meal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {

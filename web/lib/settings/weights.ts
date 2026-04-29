@@ -16,6 +16,7 @@ export const WEIGHT_KEYS = [
   "time_fit",
   "pantry_bonus",
   "direction_match",
+  "macro_target_fit",
 ] as const satisfies readonly string[];
 
 export type WeightKey = (typeof WEIGHT_KEYS)[number];
@@ -28,6 +29,7 @@ export const DEFAULT_WEIGHTS: Readonly<Record<WeightKey, number>> = Object.freez
   time_fit: 0.1,
   pantry_bonus: 0.05,
   direction_match: 0.25,
+  macro_target_fit: 0.5,
 });
 
 export function loadWeights(): Record<WeightKey, number> {

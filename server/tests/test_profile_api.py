@@ -21,6 +21,7 @@ async def test_profile_default_get_creates_singleton(client: AsyncClient) -> Non
         "locale": "en",
         "onboarded": False,
         "roll_weights": {},
+        "default_macro_targets": {},
     }
     # Idempotent: same shape on a second GET.
     r2 = await client.get("/v1/me/profile")
@@ -37,6 +38,10 @@ async def test_profile_put_round_trip(client: AsyncClient) -> None:
         "locale": "de",
         "onboarded": True,
         "roll_weights": {"freshness_boost": 0.8, "variety": 0.6},
+        "default_macro_targets": {
+            "protein_g": {"value": 50.0, "mode": "min"},
+            "fat_g": {"value": 30.0, "mode": "max"},
+        },
     }
     r = await client.put("/v1/me/profile", json=body)
     assert r.status_code == 200

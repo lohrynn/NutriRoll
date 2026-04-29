@@ -25,6 +25,11 @@ import {
   saveWeights,
 } from "@/lib/settings/weights";
 
+type MacroMode = "target" | "min" | "max";
+const MACRO_KEYS = ["kcal", "protein_g", "carbs_g", "fat_g", "fiber_g"] as const;
+type MacroKey = (typeof MACRO_KEYS)[number];
+type MacroTargetsState = Partial<Record<MacroKey, { value: number; mode: MacroMode }>>;
+
 type ThemeMode = "system" | "light" | "dark";
 
 const THEME_KEY = "nutriroll.theme";
@@ -49,6 +54,7 @@ function applyTheme(mode: ThemeMode): void {
 export function SettingsPage() {
   const t = useTranslations("settings");
   const tDietary = useTranslations("roll.dietary");
+  const tMacro = useTranslations("roll.nutritionTargets.macros");
 
   const [profile, setProfile] = useState<UserProfileRead | null>(null);
   const [dietaryMode, setDietaryMode] = useState<DietaryMode>("");
@@ -63,6 +69,8 @@ export function SettingsPage() {
   const [weights, setWeights] = useState<Record<WeightKey, number>>(() => ({
     ...DEFAULT_WEIGHTS,
   }));
+  const [defaultTargets, setDefaultTargets] = useState<MacroTargetsState>({});
+  const [targetsSavedAt, setTargetsSavedAt] = useState<number | null>(null);
   const [blacklisted, setBlacklisted] = useState<ComponentRead[]>([]);
   const [blacklistLoading, setBlacklistLoading] = useState<boolean>(true);
 
@@ -94,6 +102,14 @@ export function SettingsPage() {
       const profileWeights = p.roll_weights ?? {};
       const merged = { ...loadWeights(), ...profileWeights } as Record<WeightKey, number>;
       setWeights({ ...DEFAULT_WEIGHTS, ...merged });
+      // Seed default macro targets from profile.
+      const seed: MacroTargetsState = {};
+      const dt = p.default_macro_targets ?? {};
+      for (const key of MACRO_KEYS) {
+        const t = dt[key];
+        if (t) seed[key] = { value: t.value, mode: (t.mode ?? "target") as MacroMode };
+      }
+      setDefaultTargets(seed);
     })();
     return () => {
       cancelled = true;
@@ -116,6 +132,10 @@ export function SettingsPage() {
           locale: profile.locale,
           onboarded: profile.onboarded || true,
           roll_weights: next,
+          default_macro_targets: defaultTargets as Record<
+            string,
+            { value: number; mode: MacroMode }
+          >,
         },
       });
     }
@@ -135,8 +155,32 @@ export function SettingsPage() {
           locale: profile.locale,
           onboarded: profile.onboarded || true,
           roll_weights: {},
+          default_macro_targets: defaultTargets as Record<
+            string,
+            { value: number; mode: MacroMode }
+          >,
         },
       });
+    }
+  };
+
+  const saveDefaultTargets = async () => {
+    if (!profile) return;
+    const result = await apiClient.PUT("/v1/me/profile", {
+      body: {
+        dietary_mode: dietaryMode,
+        allergens: [...allergens],
+        default_time_budget_min: timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
+        goal: goal.trim(),
+        locale: profile.locale,
+        onboarded: profile.onboarded || true,
+        roll_weights: weights,
+        default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
+      },
+    });
+    if (result.data) {
+      setProfile(result.data);
+      setTargetsSavedAt(Date.now());
     }
   };
 
@@ -199,6 +243,7 @@ export function SettingsPage() {
         locale: profile.locale,
         onboarded: profile.onboarded || true,
         roll_weights: weights,
+        default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
       },
     });
     setSaving(false);
@@ -399,6 +444,74 @@ export function SettingsPage() {
             <Button type="button" variant="outline" size="sm" onClick={resetWeights}>
               {t("recommendations.reset")}
               <RotateCcw aria-hidden size={14} />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Default nutrition targets */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("defaultNutritionTargets.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <p className="text-sm text-[color:var(--color-muted)]">
+            {t("defaultNutritionTargets.body")}
+          </p>
+          {MACRO_KEYS.map((key) => {
+            const current = defaultTargets[key];
+            return (
+              <div key={key} className="flex items-center gap-2">
+                <span className="flex-1 text-sm">{tMacro(key)}</span>
+                <Select
+                  aria-label={`${key} mode`}
+                  className="h-8 w-14 text-sm"
+                  value={current?.mode ?? "target"}
+                  onChange={(e) => {
+                    const mode = e.target.value as MacroMode;
+                    setDefaultTargets((m) => {
+                      const existing = m[key];
+                      if (!existing) return m;
+                      return { ...m, [key]: { ...existing, mode } };
+                    });
+                  }}
+                  disabled={!current}
+                >
+                  <option value="target">=</option>
+                  <option value="min">≥</option>
+                  <option value="max">≤</option>
+                </Select>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-8 w-24 text-sm"
+                  value={current?.value ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setDefaultTargets((m) => {
+                      if (raw === "") {
+                        const next = { ...m };
+                        delete next[key];
+                        return next;
+                      }
+                      const value = Math.max(0, Number(raw));
+                      return {
+                        ...m,
+                        [key]: { value, mode: m[key]?.mode ?? "target" },
+                      };
+                    });
+                  }}
+                />
+              </div>
+            );
+          })}
+          <div className="flex items-center justify-between">
+            <output aria-live="polite" className="text-xs text-[color:var(--color-muted)]">
+              {targetsSavedAt ? t("defaultNutritionTargets.saved") : ""}
+            </output>
+            <Button type="button" size="sm" onClick={() => void saveDefaultTargets()}>
+              {t("defaultNutritionTargets.save")}
+              <Save aria-hidden size={14} />
             </Button>
           </div>
         </CardContent>

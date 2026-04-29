@@ -159,3 +159,36 @@ roll-result snapshot already stored as JSON for saved/planned meals.
 - [ ] Settings page has editable "Default nutrition targets" backed by
       `user_profile.default_macro_targets`.
 - [ ] `make check` passes.
+
+---
+
+## Implementation log (built)
+
+**Backend**
+- `domain/roll.py`: added `MacroMode` literal, `MacroTarget`, `MacroTargets`
+  dataclasses; new `_macro_target_fit()` scoring function (target = triangular
+  penalty, min = ramp below, max = ramp above); `FeatureWeights.macro_target_fit`
+  default `0.5`; `RollRequest.macro_targets`. Forward-compat extras supported via
+  `MacroTargets.extra` + `MacroTargetsSchema(extra="allow")`.
+- `domain/profile.py`: `UserProfile.default_macro_targets` (tuple-of-triples for
+  hashable frozen dataclass) + `macro_targets()` accessor.
+- `api/schemas/roll.py` + `api/schemas/profile.py`: round-trip schemas.
+- `db/models/profile.py` + `db/repositories/profile.py`: JSON column +
+  serialise/deserialise helpers.
+- Alembic 0008: `user_profile.default_macro_targets JSONB`.
+
+**Frontend**
+- `web/components/roll-page.tsx`: "Nutrition targets" card with per-macro mode
+  toggle (=/≥/≤) + numeric value; targets seeded on mount from
+  `profile.default_macro_targets`; per-macro met/missed badges on the bowl
+  totals card.
+- `web/components/settings-page.tsx`: "Default nutrition targets" card; PUT
+  `/v1/me/profile` includes `default_macro_targets`.
+- `web/lib/settings/weights.ts`: added `macro_target_fit` weight key.
+- i18n: `roll.nutritionTargets.*`, `settings.defaultNutritionTargets.*`,
+  `roll.portions`, `settings.recommendations.weights.macro_target_fit` in en+de.
+
+**Tests**
+- 4 new domain tests in `tests/test_roll_algorithm.py` (validation +
+  per-mode scoring); profile round-trip in `tests/test_profile_api.py`.
+- All 103 server + 12 web tests pass.

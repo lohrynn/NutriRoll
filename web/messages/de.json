@@ -89,6 +89,7 @@
     "planSlot": "Mahlzeit",
     "forceBaseMethod": "Zubereitungsmethode erzwingen",
     "forceBaseMethodAny": "Beliebig",
+    "portions": "Portionen (Meal-Prep)",
     "savePrompt": "Wie soll diese Bowl heißen?",
     "error": "Konnte keine Schüssel würfeln: {message}",
     "dietary": {
@@ -130,6 +131,25 @@
       "protein": "Eiweiß {value} g",
       "fat": "Fett {value} g",
       "fiber": "Ballaststoffe {value} g"
+    },
+    "nutritionTargets": {
+      "title": "Nährwert-Ziele",
+      "subtitle": "Pro-Portion-Ziele, die der Algorithmus zu treffen versucht.",
+      "clear": "Alle löschen",
+      "mode": {
+        "target": "=",
+        "min": "≥",
+        "max": "≤"
+      },
+      "met": "Ziel erreicht",
+      "missed": "Ziel verfehlt",
+      "macros": {
+        "kcal": "Kalorien (kcal)",
+        "protein_g": "Eiweiß (g)",
+        "carbs_g": "Kohlenhydrate (g)",
+        "fat_g": "Fett (g)",
+        "fiber_g": "Ballaststoffe (g)"
+      }
     }
   },
   "recipe": {
@@ -387,6 +407,8 @@
     "undo": "Rückgängig",
     "delete": "Geplante Mahlzeit löschen",
     "hint": "Würfle eine Bowl und tippe „Heute planen“, um sie deiner Woche hinzuzufügen.",
+    "markEaten": "Eine Portion gegessen",
+    "portions": "Noch {remaining} von {total} Portionen",
     "slot": {
       "breakfast": "Frühstück",
       "lunch": "Mittag",
@@ -470,8 +492,15 @@
         "nutrition_fit": "Nährwerte",
         "time_fit": "Zeit",
         "pantry_bonus": "Vorratskammer",
-        "direction_match": "Richtung"
+        "direction_match": "Richtung",
+        "macro_target_fit": "Makro-Ziel"
       }
+    },
+    "defaultNutritionTargets": {
+      "title": "Standard-Nährwert-Ziele",
+      "body": "Pro-Portion-Ziele, die die Roll-Seite in jeden Wurf übernimmt.",
+      "save": "Ziele speichern",
+      "saved": "Gespeichert."
     },
     "blacklist": {
       "title": "Gesperrte Komponenten",

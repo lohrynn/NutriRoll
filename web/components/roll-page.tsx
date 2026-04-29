@@ -4,6 +4,7 @@ import { ChefHat, Dice5, Flame, Salad, Sparkles, Utensils } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import type * as React from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,13 @@ interface RollControls {
   dietaryMode: string;
   allergensCsv: string;
   forceBaseMethod: CookingMethod | "";
+  portions: number;
 }
+
+type MacroMode = "target" | "min" | "max";
+const MACRO_KEYS = ["kcal", "protein_g", "carbs_g", "fat_g", "fiber_g"] as const;
+type MacroKey = (typeof MACRO_KEYS)[number];
+type MacroTargetsState = Partial<Record<MacroKey, { value: number; mode: MacroMode }>>;
 
 interface DirectionState {
   cuisines: Set<string>;
@@ -60,6 +67,7 @@ const INITIAL_CONTROLS: RollControls = {
   dietaryMode: "",
   allergensCsv: "",
   forceBaseMethod: "",
+  portions: 1,
 };
 
 const INITIAL_DIRECTION: DirectionState = {
@@ -87,6 +95,7 @@ export function RollPage() {
   const t = useTranslations("roll");
   const tDirection = useTranslations("roll.direction");
   const tNutrition = useTranslations("roll.nutrition");
+  const tTargets = useTranslations("roll.nutritionTargets");
   const tCategory = useTranslations("components.category");
   const tMethod = useTranslations("components.method");
   const tPlanSlot = useTranslations("plan.slot");
@@ -94,6 +103,7 @@ export function RollPage() {
 
   const [controls, setControls] = useState<RollControls>(INITIAL_CONTROLS);
   const [direction, setDirection] = useState<DirectionState>(INITIAL_DIRECTION);
+  const [macroTargets, setMacroTargets] = useState<MacroTargetsState>({});
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -134,6 +144,21 @@ export function RollPage() {
           timeBudgetMin: p.default_time_budget_min ?? c.timeBudgetMin,
         };
       });
+      // Seed default nutrition targets from profile (only on first mount and only
+      // if the user hasn't set anything yet).
+      setMacroTargets((current) => {
+        if (Object.keys(current).length > 0) return current;
+        const seed: MacroTargetsState = {};
+        const dt = p.default_macro_targets ?? {};
+        for (const key of MACRO_KEYS) {
+          const t = dt[key];
+          if (t) {
+            const mode = (t.mode ?? "target") as MacroMode;
+            seed[key] = { value: t.value, mode };
+          }
+        }
+        return seed;
+      });
     })();
     return () => {
       cancelled = true;
@@ -157,6 +182,13 @@ export function RollPage() {
     // Surprise me bumps softmax temperature to flatten the distribution.
     const surpriseBump = direction.moods.has("surprise_me") ? 0.5 : 0;
     const customWeights = loadWeightsForRoll();
+    const targetEntries = (
+      Object.entries(macroTargets) as [MacroKey, { value: number; mode: MacroMode }][]
+    ).filter(([, v]) => v && Number.isFinite(v.value));
+    const macro_targets =
+      targetEntries.length === 0
+        ? null
+        : Object.fromEntries(targetEntries.map(([k, v]) => [k, { value: v.value, mode: v.mode }]));
     return {
       slots: [...DEFAULT_SLOTS],
       time_budget_min: controls.timeBudgetMin === "" ? null : Number(controls.timeBudgetMin),
@@ -172,9 +204,11 @@ export function RollPage() {
         },
       },
       ...(customWeights ? { weights: customWeights } : {}),
+      ...(macro_targets ? { macro_targets } : {}),
+      portions: controls.portions,
       temperature: 0.5 + surpriseBump,
     };
-  }, [controls, direction]);
+  }, [controls, direction, macroTargets]);
 
   const rollAll = useCallback(async () => {
     setStatus({ kind: "rolling" });
@@ -300,10 +334,11 @@ export function RollPage() {
         bowl_snapshot: status.bowl as unknown as Record<string, unknown>,
         status: "planned",
         notes: "",
+        portions_total: controls.portions,
       },
     });
     router.push("/plan");
-  }, [router, status, planSlot]);
+  }, [router, status, planSlot, controls.portions]);
 
   return (
     <div className="grid gap-4">
@@ -370,6 +405,21 @@ export function RollPage() {
                   </option>
                 ))}
               </Select>
+            </label>
+            <label className="grid gap-1.5 text-sm sm:col-span-2">
+              <span className="font-medium">{t("portions")}</span>
+              <Input
+                type="number"
+                min={1}
+                max={14}
+                value={controls.portions}
+                onChange={(e) =>
+                  setControls((c) => ({
+                    ...c,
+                    portions: Math.max(1, Math.min(14, Number(e.target.value) || 1)),
+                  }))
+                }
+              />
             </label>
           </div>
         </CardContent>
@@ -480,6 +530,69 @@ export function RollPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between gap-2">
+            <span>{tTargets("title")}</span>
+            {Object.keys(macroTargets).length > 0 && (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setMacroTargets({})}>
+                {tTargets("clear")}
+              </Button>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-2">
+          <p className="text-xs text-[color:var(--color-muted)]">{tTargets("subtitle")}</p>
+          {MACRO_KEYS.map((key) => {
+            const current = macroTargets[key];
+            return (
+              <div key={key} className="flex items-center gap-2">
+                <span className="flex-1 text-sm">{tTargets(`macros.${key}`)}</span>
+                <Select
+                  aria-label={`${key} mode`}
+                  className="h-8 w-14 text-sm"
+                  value={current?.mode ?? "target"}
+                  onChange={(e) => {
+                    const mode = e.target.value as MacroMode;
+                    setMacroTargets((m) => {
+                      const existing = m[key];
+                      if (!existing) return m;
+                      return { ...m, [key]: { ...existing, mode } };
+                    });
+                  }}
+                  disabled={!current}
+                >
+                  <option value="target">{tTargets("mode.target")}</option>
+                  <option value="min">{tTargets("mode.min")}</option>
+                  <option value="max">{tTargets("mode.max")}</option>
+                </Select>
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-8 w-24 text-sm"
+                  value={current?.value ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setMacroTargets((m) => {
+                      if (raw === "") {
+                        const next = { ...m };
+                        delete next[key];
+                        return next;
+                      }
+                      const value = Math.max(0, Number(raw));
+                      return {
+                        ...m,
+                        [key]: { value, mode: m[key]?.mode ?? "target" },
+                      };
+                    });
+                  }}
+                />
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
       <Button
         type="button"
         size="lg"
@@ -579,31 +692,62 @@ export function RollPage() {
                     const factor = portionG / 100;
                     return {
                       kcal: acc.kcal + m.kcal * factor,
-                      carbs: acc.carbs + m.carbs_g * factor,
-                      protein: acc.protein + m.protein_g * factor,
-                      fat: acc.fat + m.fat_g * factor,
-                      fiber: acc.fiber + m.fiber_g * factor,
+                      carbs_g: acc.carbs_g + m.carbs_g * factor,
+                      protein_g: acc.protein_g + m.protein_g * factor,
+                      fat_g: acc.fat_g + m.fat_g * factor,
+                      fiber_g: acc.fiber_g + m.fiber_g * factor,
                     };
                   },
-                  { kcal: 0, carbs: 0, protein: 0, fat: 0, fiber: 0 },
+                  { kcal: 0, carbs_g: 0, protein_g: 0, fat_g: 0, fiber_g: 0 },
                 );
+                const isMet = (key: MacroKey, actual: number): boolean | null => {
+                  const tgt = macroTargets[key];
+                  if (!tgt) return null;
+                  if (tgt.mode === "min") return actual >= tgt.value;
+                  if (tgt.mode === "max") return actual <= tgt.value;
+                  return Math.abs(actual - tgt.value) / Math.max(1, tgt.value) <= 0.15;
+                };
+                const badgeFor = (
+                  key: MacroKey,
+                  label: string,
+                  actual: number,
+                ): React.ReactElement => {
+                  const met = isMet(key, actual);
+                  const variant: "brand" | "neutral" | "danger" =
+                    met === null ? "neutral" : met ? "brand" : "danger";
+                  return (
+                    <Badge key={key} variant={variant} className="tabular-nums">
+                      {label}
+                    </Badge>
+                  );
+                };
                 return (
                   <div className="flex flex-wrap gap-2">
-                    <Badge variant="brand" className="tabular-nums">
-                      {tNutrition("kcal", { value: Math.round(totals.kcal) })}
-                    </Badge>
-                    <Badge className="tabular-nums">
-                      {tNutrition("carbs", { value: Math.round(totals.carbs) })}
-                    </Badge>
-                    <Badge className="tabular-nums">
-                      {tNutrition("protein", { value: Math.round(totals.protein) })}
-                    </Badge>
-                    <Badge className="tabular-nums">
-                      {tNutrition("fat", { value: Math.round(totals.fat) })}
-                    </Badge>
-                    <Badge className="tabular-nums">
-                      {tNutrition("fiber", { value: Math.round(totals.fiber) })}
-                    </Badge>
+                    {badgeFor(
+                      "kcal",
+                      tNutrition("kcal", { value: Math.round(totals.kcal) }),
+                      totals.kcal,
+                    )}
+                    {badgeFor(
+                      "carbs_g",
+                      tNutrition("carbs", { value: Math.round(totals.carbs_g) }),
+                      totals.carbs_g,
+                    )}
+                    {badgeFor(
+                      "protein_g",
+                      tNutrition("protein", { value: Math.round(totals.protein_g) }),
+                      totals.protein_g,
+                    )}
+                    {badgeFor(
+                      "fat_g",
+                      tNutrition("fat", { value: Math.round(totals.fat_g) }),
+                      totals.fat_g,
+                    )}
+                    {badgeFor(
+                      "fiber_g",
+                      tNutrition("fiber", { value: Math.round(totals.fiber_g) }),
+                      totals.fiber_g,
+                    )}
                   </div>
                 );
               })()}
