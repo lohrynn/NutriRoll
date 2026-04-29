@@ -46,7 +46,7 @@ services:
       dockerfile: Dockerfile.dev
     command: pnpm dev
     environment:
-      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      NEXT_PUBLIC_API_BASE_URL: ""
       NEXT_PUBLIC_PWA_ENABLED: "false"
     ports:
       - "3000:3000"
