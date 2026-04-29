@@ -211,14 +211,19 @@ Key unimplemented features (frontend TODOs):
 - **After any change**: run `make check`. Do not hand off until it passes.
 - **Versioning discipline**: this is a Git repository. After completing a
   cohesive change (a single phase, a single modularity-audit fix, a feature),
-  surface the change to the user with a `git status` summary so they can
-  commit. Do **not** let uncommitted work pile up across many unrelated
-  features — it makes review and rollback impossible. Never run
-  `git commit`, `git push`, `git reset --hard`, or any history-rewriting
-  command without explicit user confirmation; the user owns the commit
-  cadence and message wording.
+  commit it with `git add -A && git commit -m "<message>"`. Write a concise
+  imperative-mood subject line and a bullet list body describing what changed.
+  Do **not** let uncommitted work pile up across many unrelated features — it
+  makes review and rollback impossible. Never run `git push`,
+  `git reset --hard`, or any history-rewriting command without explicit user
+  confirmation. The user owns push cadence; the agent owns local commits.
 - **New phase or feature**: add a phase doc to `docs/phases/` following the existing format.
 - **New modularity concern**: add it to `docs/modularity-audit.md` immediately.
+- **Resolving a modularity issue**: **remove** the entire section from
+  "Open Issues" and add a full entry (description + resolution note) to
+  "Resolved Issues" in numeric order. Do **not** leave a `✅ Resolved` stub
+  in "Open Issues" — the section must contain only genuinely unresolved items.
+  Duplicate stubs (same issue in both sections) are always wrong.
 - **Architecture decision**: add an ADR to `docs/adr/` (never edit an existing merged ADR).
 
 ### Keeping this file current
