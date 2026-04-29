@@ -41,3 +41,44 @@ This is one of the explicit unimplemented features called out in
 
 - Voice control ("Hey NutriRoll, start step 2") — needs WebSpeech +
   permissions.
+
+## Implementation log (built)
+
+The phase doc said "Cook page" but the actual recipe steps live on the
+Recipe page (`/recipe`). The Cook page (`/cook`) is the post-cook rating
+page. Phase 14 therefore wired per-step timers into `recipe-page.tsx`.
+
+Backend:
+
+- None. Step durations are derived client-side from
+  `step[i+1].offset_min - step[i].offset_min`, with the final step using
+  `block.total_minutes - lastStep.offset_min`.
+
+Frontend:
+
+- New `web/lib/cook/timers.ts`:
+  - `useCookTimer({ key, durationSec, notificationTitle, notificationBody,
+    onExpireFallback })` — a per-step persisted countdown. State is
+    mirrored to `sessionStorage` under the `nutriroll.cookTimers` key
+    (separate from `nutriroll.rolledBowl` per the workflow's
+    "sessionStorage key ownership" rule), so a tab refresh mid-cook
+    resumes the countdown instead of resetting it.
+  - `requestNotificationPermission()` — lazily asks for the Notification
+    permission on the first Start tap.
+  - On expiry the hook fires a `Notification` with a stable `tag` so
+    repeat alerts collapse, then falls back to the existing in-page beep
+    (`playDoneTone`) when notifications are denied or unsupported.
+- `web/components/recipe-page.tsx`:
+  - New `StepTimer` component placed next to every recipe step. Renders
+    the existing `mm:ss` label plus Play/Pause/Reset using the existing
+    `Button` icon variants — visually consistent with the block-level
+    `BlockTimer` already shipped.
+  - Block-level `BlockTimer` is preserved unchanged for the per-block
+    overview countdown.
+- i18n: `recipe.timer.notify.title` (en + de) so notification copy
+  follows the user's locale.
+- Vitest: `tests/unit/cook-timers.test.ts` exercises start/persist/tick,
+  expiry-fallback, and reset/storage-cleanup with fake timers.
+
+`make check` is green: 108 server tests, 16 web tests (cook-timers added),
+ruff/biome clean, pyright + tsc strict at zero errors.

@@ -165,7 +165,10 @@
     "timer": {
       "start": "Timer starten",
       "pause": "Timer pausieren",
-      "reset": "Timer zurücksetzen"
+      "reset": "Timer zurücksetzen",
+      "notify": {
+        "title": "{block} — Schritt fertig"
+      }
     }
   },
   "components": {

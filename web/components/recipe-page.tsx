@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import type { Category } from "@/lib/components/types";
+import { requestNotificationPermission, useCookTimer } from "@/lib/cook/timers";
 import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
 import type { Recipe } from "@/lib/recipe/types";
 import type { RolledBowl } from "@/lib/roll/types";
@@ -169,6 +170,78 @@ function BlockTimer({ totalMinutes }: BlockTimerProps) {
   );
 }
 
+interface StepTimerProps {
+  stepKey: string;
+  durationSec: number;
+  blockTitle: string;
+  stepText: string;
+}
+
+/** Phase 14. Per-step countdown with sessionStorage persistence and PWA
+ * notifications. Falls back to the existing in-page beep when notifications
+ * are denied or unsupported. */
+function StepTimer({ stepKey, durationSec, blockTitle, stepText }: StepTimerProps) {
+  const t = useTranslations("recipe.timer");
+  const timer = useCookTimer({
+    key: stepKey,
+    durationSec,
+    notificationTitle: t("notify.title", { block: blockTitle }),
+    notificationBody: stepText,
+    onExpireFallback: playDoneTone,
+  });
+
+  if (durationSec === 0) return null;
+
+  return (
+    <div className="flex items-center gap-1">
+      <output
+        aria-live="polite"
+        className={`tabular-nums text-xs font-semibold ${
+          timer.done ? "text-[color:var(--color-danger)]" : "text-[color:var(--color-fg)]"
+        }`}
+      >
+        {formatMmSs(timer.remainingSec)}
+      </output>
+      {!timer.running && !timer.done && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          aria-label={t("start")}
+          onClick={() => {
+            void requestNotificationPermission();
+            timer.start();
+          }}
+        >
+          <Play aria-hidden size={12} />
+        </Button>
+      )}
+      {timer.running && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          aria-label={t("pause")}
+          onClick={timer.pause}
+        >
+          <Pause aria-hidden size={12} />
+        </Button>
+      )}
+      {(timer.done || (timer.active && !timer.running && timer.remainingSec < durationSec)) && (
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          aria-label={t("reset")}
+          onClick={timer.reset}
+        >
+          <RotateCcw aria-hidden size={12} />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function RecipePage() {
   const t = useTranslations("recipe");
   const tCategory = useTranslations("components.category");
@@ -291,14 +364,28 @@ export function RecipePage() {
                       </div>
                       {block.steps.length > 0 && (
                         <ol className="grid gap-1 border-l-2 border-[color:var(--color-border)] pl-3 text-sm">
-                          {block.steps.map((step, idx) => (
-                            <li key={`${step.text}-${idx}`} className="flex gap-2">
-                              <span className="shrink-0 text-xs tabular-nums text-[color:var(--color-muted)]">
-                                {String(step.offset_min).padStart(2, "0")}:00
-                              </span>
-                              <span>{step.text}</span>
-                            </li>
-                          ))}
+                          {block.steps.map((step, idx) => {
+                            const next = block.steps[idx + 1];
+                            const stepDurationMin =
+                              next !== undefined
+                                ? Math.max(0, next.offset_min - step.offset_min)
+                                : Math.max(0, block.total_minutes - step.offset_min);
+                            const stepKey = `${block.category}:${block.method}:${block.title}:${idx}`;
+                            return (
+                              <li key={`${step.text}-${idx}`} className="flex items-center gap-2">
+                                <span className="shrink-0 text-xs tabular-nums text-[color:var(--color-muted)]">
+                                  {String(step.offset_min).padStart(2, "0")}:00
+                                </span>
+                                <span className="flex-1">{step.text}</span>
+                                <StepTimer
+                                  stepKey={stepKey}
+                                  durationSec={Math.round(stepDurationMin * 60)}
+                                  blockTitle={block.title}
+                                  stepText={step.text}
+                                />
+                              </li>
+                            );
+                          })}
                         </ol>
                       )}
                     </CardContent>
