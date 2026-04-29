@@ -7,6 +7,7 @@ export type ComponentRead = openapi["schemas"]["ComponentRead"];
 export type ComponentCreate = openapi["schemas"]["ComponentCreate"];
 export type CookingMethodSpec = openapi["schemas"]["CookingMethodSpecSchema"];
 export type Macros = openapi["schemas"]["MacrosSchema"];
+export type Equipment = openapi["schemas"]["Equipment"];
 
 /**
  * Well-known macro keys mirrored from the backend ``Macros.WELL_KNOWN_KEYS``.

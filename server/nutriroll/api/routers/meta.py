@@ -18,6 +18,7 @@ from nutriroll.domain.component import (
     CookingMethod,
     PortionUnit,
 )
+from nutriroll.domain.equipment import DEFAULT_EQUIPMENT, METHOD_REQUIREMENTS, Equipment
 
 router = APIRouter(prefix="/v1/meta", tags=["meta"])
 
@@ -38,6 +39,14 @@ class ComponentMeta(BaseModel):
     the enum. Used by the frontend as i18n fallbacks so unknown categories
     (e.g. a newly-added slot type) are still rendered meaningfully without
     a code change to the translation files (modularity-audit M4)."""
+    equipment: list[Equipment]
+    """Phase 13. Vocabulary of equipment chips the Settings page renders."""
+    method_requirements: dict[CookingMethod, list[Equipment]]
+    """Phase 13. Per-method equipment requirements; the frontend uses this to
+    decide which icons to show on a bowl card and to keep the Settings UI in
+    sync with the algorithm's hard-filter rules (modularity-audit pattern)."""
+    default_equipment: list[Equipment]
+    """Phase 13. Sensible defaults for new users (oven + stovetop + microwave)."""
 
 
 @router.get(
@@ -60,4 +69,10 @@ async def get_component_meta() -> ComponentMeta:
         category_labels={
             category: category.value.replace("_", " ").title() for category in Category
         },
+        equipment=list(Equipment),
+        method_requirements={
+            method: sorted(METHOD_REQUIREMENTS.get(method, frozenset()), key=lambda e: e.value)
+            for method in CookingMethod
+        },
+        default_equipment=sorted(DEFAULT_EQUIPMENT, key=lambda e: e.value),
     )

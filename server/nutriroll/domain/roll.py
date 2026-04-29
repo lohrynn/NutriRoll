@@ -19,6 +19,7 @@ from uuid import UUID
 
 from nutriroll.domain.category_meta import BALANCED_TARGETS
 from nutriroll.domain.component import Category, Component, CookingMethod, PortionUnit
+from nutriroll.domain.equipment import Equipment, component_is_equipment_feasible
 
 MacroMode = Literal["target", "min", "max"]
 
@@ -193,6 +194,12 @@ class RollRequest:
     """Phase 12 — meal-prep batch size. Does not change which components are
     rolled (targets stay per-portion); used by the recipe / shopping / planner
     surfaces to scale grams and track remaining portions."""
+    available_equipment: frozenset[Equipment] = field(
+        default_factory=lambda: frozenset()
+    )
+    """Phase 13 — the user's owned hardware. Empty = "all available"
+    (back-compat). When non-empty, components without at least one
+    equipment-feasible cooking method are dropped in Step A."""
     # IDs of components currently in the user's pantry. Boosts ``pantry_bonus``.
     pantry_component_ids: frozenset[UUID] = field(default_factory=frozenset[UUID])
     # Subset of ``pantry_component_ids`` that are about to expire (within
@@ -285,6 +292,15 @@ def _passes_forced_method(component: Component, forced: CookingMethod | None) ->
     return any(spec.method == forced for spec in component.cooking_methods)
 
 
+def _passes_equipment(component: Component, available: frozenset[Equipment]) -> bool:
+    """Step A. Drop components when none of their methods are equipment-feasible.
+
+    Empty ``available`` is treated as "all available" (back-compat for users
+    who never declared equipment). See :mod:`nutriroll.domain.equipment`.
+    """
+    return component_is_equipment_feasible(component, available)
+
+
 def filter_candidates(
     components: Iterable[Component],
     request: RollRequest,
@@ -307,6 +323,8 @@ def filter_candidates(
         if not _passes_time_budget(c, request.time_budget_min):
             continue
         if not _passes_forced_method(c, forced):
+            continue
+        if not _passes_equipment(c, request.available_equipment):
             continue
         out.append(c)
     return out
@@ -664,6 +682,7 @@ def reroll_slot(
         tag_boosts=request.tag_boosts,
         macro_targets=request.macro_targets,
         portions=request.portions,
+        available_equipment=request.available_equipment,
         temperature=request.temperature,
         seed=request.seed,
     )

@@ -500,8 +500,16 @@ export interface components {
             category_labels: {
                 [key: string]: string;
             };
+            /** Default Equipment */
+            default_equipment: components["schemas"]["Equipment"][];
+            /** Equipment */
+            equipment: components["schemas"]["Equipment"][];
             /** Expiry Warning Days */
             expiry_warning_days: number;
+            /** Method Requirements */
+            method_requirements: {
+                [key: string]: components["schemas"]["Equipment"][];
+            };
             /** Portion Units */
             portion_units: components["schemas"]["PortionUnit"][];
         };
@@ -564,6 +572,12 @@ export interface components {
             /** Moods */
             moods?: string[];
         };
+        /**
+         * Equipment
+         * @description User-owned hardware. Single source of truth for the chip set.
+         * @enum {string}
+         */
+        Equipment: "oven" | "stovetop" | "microwave" | "air_fryer" | "pressure_cooker" | "blender" | "grill" | "toaster";
         /** FeatureWeightsSchema */
         FeatureWeightsSchema: {
             /**
@@ -992,6 +1006,8 @@ export interface components {
         RollRequestSchema: {
             /** Allergens Excluded */
             allergens_excluded?: string[];
+            /** Available Equipment */
+            available_equipment?: components["schemas"]["Equipment"][];
             /** Blacklisted Ids */
             blacklisted_ids?: string[];
             /** Dietary Mode */
@@ -1167,6 +1183,8 @@ export interface components {
              * @enum {string}
              */
             dietary_mode: "" | "vegan" | "vegetarian" | "pescatarian";
+            /** Equipment */
+            equipment: components["schemas"]["Equipment"][];
             /** Goal */
             goal: string;
             /** Locale */
@@ -1194,6 +1212,8 @@ export interface components {
              * @enum {string}
              */
             dietary_mode: "" | "vegan" | "vegetarian" | "pescatarian";
+            /** Equipment */
+            equipment?: components["schemas"]["Equipment"][];
             /**
              * Goal
              * @default

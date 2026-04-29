@@ -5,7 +5,7 @@ import { type ReactNode, createContext, useContext, useEffect, useState } from "
 import { apiClient } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 import { DEFAULT_EXPIRY_WARNING_DAYS } from "@/lib/pantry/freshness";
-import type { Category, CookingMethod } from "./types";
+import type { Category, CookingMethod, Equipment } from "./types";
 
 export type ComponentMeta = components["schemas"]["ComponentMeta"];
 
@@ -83,4 +83,29 @@ export function useCategoryLabel(category: Category): string {
     meta?.category_labels?.[category] ??
     category.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
   );
+}
+
+/** Phase 13. Returns the equipment vocabulary, or `[]` while loading. */
+export function useEquipment(): readonly Equipment[] {
+  const meta = useComponentMeta();
+  return meta?.equipment ?? [];
+}
+
+/** Phase 13. Sensible defaults for new users (oven + stovetop + microwave). */
+export function useDefaultEquipment(): readonly Equipment[] {
+  const meta = useComponentMeta();
+  return meta?.default_equipment ?? [];
+}
+
+/**
+ * Phase 13. Returns the equipment required by a given cooking method, or `[]`
+ * if the method has no requirements (e.g. raw / no_prep / custom). Used by the
+ * Roll page to render a per-bowl equipment icon strip without duplicating the
+ * algorithm's hard-filter rules.
+ */
+export function useMethodRequirements(): Readonly<Record<CookingMethod, readonly Equipment[]>> {
+  const meta = useComponentMeta();
+  return (meta?.method_requirements ?? {}) as unknown as Readonly<
+    Record<CookingMethod, readonly Equipment[]>
+  >;
 }

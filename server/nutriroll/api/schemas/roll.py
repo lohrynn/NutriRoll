@@ -20,6 +20,7 @@ from nutriroll.domain.direction import (
     FlavorAxes,
     translate,
 )
+from nutriroll.domain.equipment import Equipment
 from nutriroll.domain.roll import (
     ChosenComponent,
     FeatureWeights,
@@ -178,6 +179,10 @@ class RollRequestSchema(BaseModel):
     tag_boosts: dict[str, float] = Field(default_factory=dict[str, float])
     macro_targets: MacroTargetsSchema | None = None
     portions: int = Field(default=1, ge=1, le=14)
+    available_equipment: list[Equipment] = Field(default_factory=list[Equipment], max_length=32)
+    """Phase 13 — the user's owned hardware (e.g. ``["oven", "stovetop"]``).
+    Empty = "all available" (back-compat). Validated against the
+    :class:`Equipment` enum during ``to_domain()``."""
     temperature: float = Field(default=0.5, gt=0, le=5)
     seed: int | None = None
 
@@ -209,6 +214,7 @@ class RollRequestSchema(BaseModel):
             tag_boosts=boosts,
             macro_targets=self.macro_targets.to_domain() if self.macro_targets else None,
             portions=self.portions,
+            available_equipment=frozenset(self.available_equipment),
             temperature=self.temperature,
             seed=self.seed,
         )

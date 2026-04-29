@@ -30,3 +30,6 @@ class UserProfileRow(Base):
     )
     """JSON map of macro name → ``{value, mode}``. NULL = user hasn't set defaults.
     Stored as JSONB on Postgres (see migration 0008); JSON here for SQLite test compat."""
+    equipment: Mapped[list[Any] | None] = mapped_column(JSON, nullable=True, default=None)
+    """JSON list of equipment value strings. NULL = "all available" (back-compat).
+    Stored as JSONB on Postgres (see migration 0010)."""

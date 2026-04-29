@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
-import type { ComponentRead } from "@/lib/components/types";
+import { useDefaultEquipment, useEquipment } from "@/lib/components/meta";
+import type { ComponentRead, Equipment } from "@/lib/components/types";
 import {
   COMMON_ALLERGENS,
   DIETARY_MODES,
@@ -55,6 +56,9 @@ export function SettingsPage() {
   const t = useTranslations("settings");
   const tDietary = useTranslations("roll.dietary");
   const tMacro = useTranslations("roll.nutritionTargets.macros");
+  const tEquipment = useTranslations("settings.equipment");
+  const equipmentVocab = useEquipment();
+  const defaultEquipmentVocab = useDefaultEquipment();
 
   const [profile, setProfile] = useState<UserProfileRead | null>(null);
   const [dietaryMode, setDietaryMode] = useState<DietaryMode>("");
@@ -71,6 +75,9 @@ export function SettingsPage() {
   }));
   const [defaultTargets, setDefaultTargets] = useState<MacroTargetsState>({});
   const [targetsSavedAt, setTargetsSavedAt] = useState<number | null>(null);
+  const [equipment, setEquipment] = useState<Set<Equipment>>(() => new Set());
+  const [equipmentTouched, setEquipmentTouched] = useState(false);
+  const [equipmentSavedAt, setEquipmentSavedAt] = useState<number | null>(null);
   const [blacklisted, setBlacklisted] = useState<ComponentRead[]>([]);
   const [blacklistLoading, setBlacklistLoading] = useState<boolean>(true);
 
@@ -110,6 +117,8 @@ export function SettingsPage() {
         if (t) seed[key] = { value: t.value, mode: (t.mode ?? "target") as MacroMode };
       }
       setDefaultTargets(seed);
+      // Phase 13. Empty stored equipment = back-compat "all available".
+      setEquipment(new Set(p.equipment ?? []));
     })();
     return () => {
       cancelled = true;
@@ -136,6 +145,7 @@ export function SettingsPage() {
             string,
             { value: number; mode: MacroMode }
           >,
+          equipment: [...equipment],
         },
       });
     }
@@ -159,6 +169,7 @@ export function SettingsPage() {
             string,
             { value: number; mode: MacroMode }
           >,
+          equipment: [...equipment],
         },
       });
     }
@@ -176,6 +187,7 @@ export function SettingsPage() {
         onboarded: profile.onboarded || true,
         roll_weights: weights,
         default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
+        equipment: [...equipment],
       },
     });
     if (result.data) {
@@ -223,6 +235,50 @@ export function SettingsPage() {
     });
   };
 
+  const toggleEquipment = (e: Equipment) => {
+    setEquipmentTouched(true);
+    setEquipment((prev) => {
+      const next = new Set(prev);
+      if (next.has(e)) next.delete(e);
+      else next.add(e);
+      return next;
+    });
+  };
+
+  // Phase 13. New profiles arrive with `equipment: []` (back-compat = "all
+  // available"). Once meta loads we seed the chips with the recommended
+  // defaults (oven + stovetop + microwave) so the user starts from a
+  // realistic baseline. We only seed when the user hasn't touched the chips
+  // yet to avoid stomping an explicit empty selection.
+  useEffect(() => {
+    if (!profile) return;
+    if (equipmentTouched) return;
+    if ((profile.equipment ?? []).length > 0) return;
+    if (defaultEquipmentVocab.length === 0) return;
+    setEquipment(new Set(defaultEquipmentVocab));
+  }, [profile, equipmentTouched, defaultEquipmentVocab]);
+
+  const saveEquipment = async () => {
+    if (!profile) return;
+    const result = await apiClient.PUT("/v1/me/profile", {
+      body: {
+        dietary_mode: dietaryMode,
+        allergens: [...allergens],
+        default_time_budget_min: timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
+        goal: goal.trim(),
+        locale: profile.locale,
+        onboarded: profile.onboarded || true,
+        roll_weights: weights,
+        default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
+        equipment: [...equipment],
+      },
+    });
+    if (result.data) {
+      setProfile(result.data);
+      setEquipmentSavedAt(Date.now());
+    }
+  };
+
   const saveProfile = async () => {
     if (!profile) return;
     setSaving(true);
@@ -244,6 +300,7 @@ export function SettingsPage() {
         onboarded: profile.onboarded || true,
         roll_weights: weights,
         default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
+        equipment: [...equipment],
       },
     });
     setSaving(false);
@@ -511,6 +568,56 @@ export function SettingsPage() {
             </output>
             <Button type="button" size="sm" onClick={() => void saveDefaultTargets()}>
               {t("defaultNutritionTargets.save")}
+              <Save aria-hidden size={14} />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Equipment (Phase 13) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{tEquipment("title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <p className="text-sm text-[color:var(--color-muted)]">{tEquipment("body")}</p>
+          {equipmentVocab.length === 0 ? (
+            <output aria-live="polite" className="text-sm text-[color:var(--color-muted)]">
+              {tEquipment("loading")}
+            </output>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {equipmentVocab.map((piece) => {
+                const active = equipment.has(piece);
+                return (
+                  <button
+                    key={piece}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => toggleEquipment(piece)}
+                    className={
+                      active
+                        ? "rounded-full bg-[color:var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-brand-fg)] transition active:scale-95"
+                        : "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium transition hover:border-[color:var(--color-brand)] active:scale-95"
+                    }
+                  >
+                    {tEquipment(`pieces.${piece}`)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <output aria-live="polite" className="text-xs text-[color:var(--color-muted)]">
+              {equipmentSavedAt ? tEquipment("saved") : ""}
+            </output>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void saveEquipment()}
+              disabled={!profile || equipmentVocab.length === 0}
+            >
+              {tEquipment("save")}
               <Save aria-hidden size={14} />
             </Button>
           </div>

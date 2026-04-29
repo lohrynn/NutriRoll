@@ -502,6 +502,23 @@
       "save": "Ziele speichern",
       "saved": "Gespeichert."
     },
+    "equipment": {
+      "title": "Küchenausstattung",
+      "body": "Sag uns, was du hast, damit der Würfler keine Bowls vorschlägt, die du nicht kochen kannst. Leere Auswahl = „alles vorhanden“.",
+      "loading": "Lädt…",
+      "save": "Ausstattung speichern",
+      "saved": "Gespeichert.",
+      "pieces": {
+        "oven": "Backofen",
+        "stovetop": "Herd",
+        "microwave": "Mikrowelle",
+        "air_fryer": "Heißluftfritteuse",
+        "pressure_cooker": "Schnellkochtopf",
+        "blender": "Mixer",
+        "grill": "Grill",
+        "toaster": "Toaster"
+      }
+    },
     "blacklist": {
       "title": "Gesperrte Komponenten",
       "body": "Komponenten, die du vom Würfeln ausgeschlossen hast. Stelle sie wieder her, um sie zurückzuholen.",

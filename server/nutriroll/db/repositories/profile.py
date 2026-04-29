@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nutriroll.db.models.profile import UserProfileRow
+from nutriroll.domain.equipment import Equipment
 from nutriroll.domain.profile import UserProfile
 from nutriroll.domain.roll import MacroMode
 
@@ -31,6 +32,23 @@ def _to_domain(row: UserProfileRow) -> UserProfile:
             else "target"
         )
         target_triples.append((str(name), value, mode))
+    raw_equipment = row.equipment or []
+    equipment_tuple: tuple[Equipment, ...] = ()
+    if raw_equipment:
+        seen: set[Equipment] = set()
+        accepted: list[Equipment] = []
+        for value in raw_equipment:
+            try:
+                e = Equipment(str(value))
+            except ValueError:
+                # Forward-compat: silently drop unknown equipment values
+                # rather than blowing up an existing profile load.
+                continue
+            if e in seen:
+                continue
+            seen.add(e)
+            accepted.append(e)
+        equipment_tuple = tuple(accepted)
     return UserProfile(
         dietary_mode=row.dietary_mode,
         allergens=tuple(str(a) for a in raw_allergens),
@@ -40,6 +58,7 @@ def _to_domain(row: UserProfileRow) -> UserProfile:
         onboarded=row.onboarded,
         roll_weights=tuple(raw_weights.items()),
         default_macro_targets=tuple(target_triples),
+        equipment=equipment_tuple,
     )
 
 
@@ -71,6 +90,9 @@ class UserProfileRepository:
             if profile.default_macro_targets
             else None
         )
+        equipment_json: list[str] | None = (
+            [e.value for e in profile.equipment] if profile.equipment else None
+        )
         stmt = (
             pg_insert(UserProfileRow)
             .values(
@@ -83,6 +105,7 @@ class UserProfileRepository:
                 onboarded=profile.onboarded,
                 roll_weights=weights_json,
                 default_macro_targets=targets_json,
+                equipment=equipment_json,
             )
             .on_conflict_do_update(
                 index_elements=["id"],
@@ -95,6 +118,7 @@ class UserProfileRepository:
                     "onboarded": profile.onboarded,
                     "roll_weights": weights_json,
                     "default_macro_targets": targets_json,
+                    "equipment": equipment_json,
                 },
             )
         )

@@ -502,6 +502,23 @@
       "save": "Save targets",
       "saved": "Saved."
     },
+    "equipment": {
+      "title": "Kitchen equipment",
+      "body": "Tell us what you own so the roller stops suggesting bowls you can't cook. Empty selection means \"all available\".",
+      "loading": "Loading…",
+      "save": "Save equipment",
+      "saved": "Saved.",
+      "pieces": {
+        "oven": "Oven",
+        "stovetop": "Stovetop",
+        "microwave": "Microwave",
+        "air_fryer": "Air fryer",
+        "pressure_cooker": "Pressure cooker",
+        "blender": "Blender",
+        "grill": "Grill",
+        "toaster": "Toaster"
+      }
+    },
     "blacklist": {
       "title": "Blacklisted components",
       "body": "Components you've banned from rolls. Restore any to bring it back.",

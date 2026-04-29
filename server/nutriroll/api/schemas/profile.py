@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from nutriroll.api.schemas.roll import MacroTargetSchema
+from nutriroll.domain.equipment import Equipment
 from nutriroll.domain.profile import UserProfile
 from nutriroll.domain.roll import MacroMode, MacroTargets
 
@@ -27,6 +28,9 @@ class UserProfileRead(BaseModel):
     default_macro_targets: dict[str, MacroTargetSchema]
     """Phase 11. Per-portion macro targets the user wants by default. Empty
     dict = no preference; the Roll page form starts blank."""
+    equipment: list[Equipment]
+    """Phase 13. Hardware the user owns (e.g. ``["oven", "stovetop"]``).
+    Empty = "all available" (back-compat)."""
 
     @classmethod
     def from_domain(cls, p: UserProfile) -> UserProfileRead:
@@ -44,6 +48,7 @@ class UserProfileRead(BaseModel):
             onboarded=p.onboarded,
             roll_weights=dict(p.roll_weights),
             default_macro_targets=targets_dict,
+            equipment=list(p.equipment),
         )
 
 
@@ -60,6 +65,8 @@ class UserProfileUpdate(BaseModel):
     """Per-user scoring weight overrides sent from the Settings UI."""
     default_macro_targets: dict[str, MacroTargetSchema] = Field(default_factory=dict)
     """Phase 11. Per-portion macro targets the user wants by default."""
+    equipment: list[Equipment] = Field(default_factory=list[Equipment], max_length=32)
+    """Phase 13. Hardware the user owns. Validated via the Equipment enum."""
 
     def to_domain(self) -> UserProfile:
         # Validate macro targets via the domain helper to keep the rules in
@@ -83,6 +90,7 @@ class UserProfileUpdate(BaseModel):
             onboarded=self.onboarded,
             roll_weights=tuple(self.roll_weights.items()),
             default_macro_targets=target_triples,
+            equipment=tuple(self.equipment),
         )
 
 

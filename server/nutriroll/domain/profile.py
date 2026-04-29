@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from nutriroll.domain.equipment import Equipment
 from nutriroll.domain.roll import MacroMode, MacroTarget, MacroTargets
 
 
@@ -46,6 +47,11 @@ class UserProfile:
     seeds this into its form so the user doesn't retype targets every session.
     """
 
+    equipment: tuple[Equipment, ...] = ()
+    """Phase 13 — hardware the user owns. Empty = "all available" (back-compat
+    default; Roll behaves exactly as it did before equipment was introduced).
+    Stored as a tuple so the frozen dataclass stays hashable."""
+
     def __post_init__(self) -> None:
         if self.dietary_mode not in ("", "vegan", "vegetarian", "pescatarian"):
             raise ValueError(f"unknown dietary_mode: {self.dietary_mode!r}")
@@ -72,6 +78,15 @@ class UserProfile:
                 raise ValueError(
                     f"default_macro_targets[{name!r}] mode must be target/min/max, got {mode!r}"
                 )
+        equipment_seen: set[Equipment] = set()
+        for piece in self.equipment:
+            if piece in equipment_seen:
+                raise ValueError(f"duplicate equipment entry {piece!r}")
+            equipment_seen.add(piece)
+
+    def available_equipment(self) -> frozenset[Equipment]:
+        """Helper: tuple → frozenset for the roll algorithm."""
+        return frozenset(self.equipment)
 
     def macro_targets(self) -> MacroTargets | None:
         """Helper: build a :class:`MacroTargets` from the stored defaults."""

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
 import { useAllowedMethods } from "@/lib/components/meta";
-import type { Category, CookingMethod } from "@/lib/components/types";
+import type { Category, CookingMethod, Equipment } from "@/lib/components/types";
 import { MEAL_SLOTS, type MealSlot } from "@/lib/planning/types";
 import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
 import { DEFAULT_SLOTS, type RolledBowl, type RolledSlot } from "@/lib/roll/types";
@@ -104,6 +104,7 @@ export function RollPage() {
   const [controls, setControls] = useState<RollControls>(INITIAL_CONTROLS);
   const [direction, setDirection] = useState<DirectionState>(INITIAL_DIRECTION);
   const [macroTargets, setMacroTargets] = useState<MacroTargetsState>({});
+  const [availableEquipment, setAvailableEquipment] = useState<readonly Equipment[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
@@ -159,6 +160,10 @@ export function RollPage() {
         }
         return seed;
       });
+      // Phase 13. Forward the user's owned equipment so the algorithm drops
+      // components whose every cooking method requires unavailable hardware.
+      // Empty list = back-compat "all available".
+      setAvailableEquipment([...(p.equipment ?? [])]);
     })();
     return () => {
       cancelled = true;
@@ -206,9 +211,10 @@ export function RollPage() {
       ...(customWeights ? { weights: customWeights } : {}),
       ...(macro_targets ? { macro_targets } : {}),
       portions: controls.portions,
+      available_equipment: [...availableEquipment],
       temperature: 0.5 + surpriseBump,
     };
-  }, [controls, direction, macroTargets]);
+  }, [controls, direction, macroTargets, availableEquipment]);
 
   const rollAll = useCallback(async () => {
     setStatus({ kind: "rolling" });

@@ -28,7 +28,7 @@ Phases map directly to the milestone list in `PROJECT_VISION.md § "MVP scoping 
 | [phase-10-settings.md](phase-10-settings.md) | ✅ Done | `/settings` page (profile editor, appearance, data export, about) |
 | [phase-11-nutrition-targets.md](phase-11-nutrition-targets.md) | ✅ Done | Per-meal macro targets (≥/=/≤ per macro) — algorithm + Roll UI + profile defaults |
 | [phase-12-meal-prep.md](phase-12-meal-prep.md) | ✅ Done | Multi-portion roll: `portions` on RollRequest + `portions_total/remaining` on planned meals + `mark-eaten` API |
-| [phase-13-equipment.md](phase-13-equipment.md) | 🟡 TODO | Equipment profile filters allowed cooking methods |
+| [phase-13-equipment.md](phase-13-equipment.md) | ✅ Done | Equipment profile filters allowed cooking methods |
 | [phase-14-cooking-timers.md](phase-14-cooking-timers.md) | 🟡 TODO | Live per-step countdown timers + PWA notifications on Cook page |
 | [phase-15-ai-assistant.md](phase-15-ai-assistant.md) | 🟡 TODO | BYO LLM: goal interpretation, recipe customization, week planning |
 | [phase-16-notifications.md](phase-16-notifications.md) | 🟡 TODO | PWA push: planner reminders, expiring pantry, weekly summary |

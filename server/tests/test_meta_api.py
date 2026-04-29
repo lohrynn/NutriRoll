@@ -19,6 +19,9 @@ async def test_meta_components_exposes_vocabulary(client: AsyncClient) -> None:
         "balanced_targets",
         "expiry_warning_days",
         "category_labels",
+        "equipment",
+        "method_requirements",
+        "default_equipment",
     }
 
     # Categories include the four canonical slot kinds.
