@@ -582,6 +582,70 @@ def check_pairing(slots: Sequence[ChosenComponent]) -> list[str]:
     return issues
 
 
+def bowl_macro_totals(chosen: Sequence[ChosenComponent]) -> dict[str, float]:
+    """Per-portion macro totals for the assembled bowl.
+
+    Each component contributes ``macros_per_100g * portion_grams / 100``.
+    Components with non-gram portion units contribute 0 (consistent with
+    ``_portion_grams``).
+    """
+    totals: dict[str, float] = {}
+    for choice in chosen:
+        factor = _portion_grams(choice.component) / 100.0
+        for name, val in choice.component.macros_per_100g.as_dict().items():
+            totals[name] = totals.get(name, 0.0) + val * factor
+    return totals
+
+
+def macro_violations(
+    chosen: Sequence[ChosenComponent],
+    targets: MacroTargets | None,
+) -> list[tuple[str, MacroMode]]:
+    """Return (macro_key, mode) pairs for hard min/max constraints violated by the bowl.
+
+    ``"target"`` mode is soft-only — enforced via ``_macro_target_fit`` scoring
+    only, never by resampling. ``"min"`` and ``"max"`` are hard constraints that
+    Step D will attempt to satisfy via resampling.
+    """
+    if targets is None:
+        return []
+    mapping = targets.as_mapping()
+    if not mapping:
+        return []
+    totals = bowl_macro_totals(chosen)
+    violated: list[tuple[str, MacroMode]] = []
+    for name, target in mapping.items():
+        if target.mode == "target":
+            continue
+        actual = totals.get(name, 0.0)
+        if target.mode == "min" and actual < target.value:
+            violated.append((name, "min"))
+        elif target.mode == "max" and actual > target.value:
+            violated.append((name, "max"))
+    return violated
+
+
+def _worst_slot_for_macro(
+    chosen: Sequence[ChosenComponent],
+    macro_key: str,
+    mode: MacroMode,
+) -> int:
+    """Index of the slot to swap to best address a violated macro constraint.
+
+    For a ``"min"`` violation swap the slot with the *lowest* contribution
+    (replacing it with a higher-contributing alternative increases the total).
+    For a ``"max"`` violation swap the slot with the *highest* contribution.
+    """
+
+    def _contribution(cc: ChosenComponent) -> float:
+        factor = _portion_grams(cc.component) / 100.0
+        return cc.component.macros_per_100g.as_dict().get(macro_key, 0.0) * factor
+
+    if mode == "min":
+        return min(range(len(chosen)), key=lambda i: _contribution(chosen[i]))
+    return max(range(len(chosen)), key=lambda i: _contribution(chosen[i]))
+
+
 # ---------------------------------------------------------------------------
 # Public entry points
 # ---------------------------------------------------------------------------
@@ -631,15 +695,25 @@ def roll(
             )
             chosen_ids.add(picked.id)
 
-    # Step D — soft validation. Resample once per violating slot up to K times.
+    # Step D — soft/hard validation. Resample violating slots up to K times.
+    # Hard macro constraints (min/max) take priority over soft pairing rules.
     for _ in range(max_resamples):
-        issues = check_pairing(chosen_per_slot)
-        if not issues:
+        macro_viols = macro_violations(chosen_per_slot, request.macro_targets)
+        pairing_issues = check_pairing(chosen_per_slot)
+        if not macro_viols and not pairing_issues:
             break
-        # Drop the lowest-scoring choice and resample its slot.
-        lowest_idx = min(range(len(chosen_per_slot)), key=lambda i: chosen_per_slot[i].score)
-        target = chosen_per_slot[lowest_idx]
-        pool = filter_candidates(components_list, request, target.component.category)
+
+        if macro_viols:
+            # Hard min/max constraint: swap the slot that contributes the least
+            # (for "min") or most (for "max") to the violated macro.
+            macro_key, macro_mode = macro_viols[0]
+            worst_idx = _worst_slot_for_macro(chosen_per_slot, macro_key, macro_mode)
+        else:
+            # Pairing issue only: drop the lowest-scoring choice.
+            worst_idx = min(range(len(chosen_per_slot)), key=lambda i: chosen_per_slot[i].score)
+
+        target_choice = chosen_per_slot[worst_idx]
+        pool = filter_candidates(components_list, request, target_choice.component.category)
         already_picked = {c.component.id for c in chosen_per_slot}
         scored = [(c, *score_component(c, request)) for c in pool if c.id not in already_picked]
         if not scored:
@@ -648,7 +722,7 @@ def roll(
         picked_score, contributions = next(
             (s, contrib) for c, s, contrib in scored if c.id == picked.id
         )
-        chosen_per_slot[lowest_idx] = ChosenComponent(
+        chosen_per_slot[worst_idx] = ChosenComponent(
             component=picked,
             score=picked_score,
             reasons=_top_reasons(picked, contributions, request),

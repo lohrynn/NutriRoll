@@ -403,6 +403,184 @@ def test_macro_target_validation() -> None:
         MacroTargets(extra=(("kcal", MacroTarget(value=1)),))
 
 
+def _component_100g(category: Category, name: str, **macro_overrides: float) -> Component:
+    """Build a component with a 100g portion for 1:1 macro math."""
+    macros = Macros(
+        kcal=macro_overrides.get("kcal", 100),
+        carbs_g=macro_overrides.get("carbs_g", 10),
+        protein_g=macro_overrides.get("protein_g", 5),
+        fat_g=macro_overrides.get("fat_g", 3),
+        fiber_g=macro_overrides.get("fiber_g", 1),
+    )
+    method = next(iter(ALLOWED_METHODS[category]))
+    return Component(
+        id=uuid4(),
+        category=category,
+        name=name,
+        macros_per_100g=macros,
+        default_portion=Portion(value=100, unit=PortionUnit.GRAM),
+        default_cooking_method=method,
+        cooking_methods=(CookingMethodSpec(method=method, approx_minutes=5),),
+        flavor_tags=("mild",),
+        dietary_tags=("vegan", "vegetarian"),
+        allergens=(),
+        blacklisted=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 — bowl-level macro constraint enforcement (Step D)
+# ---------------------------------------------------------------------------
+
+
+def test_macro_violations_returns_empty_for_none_targets() -> None:
+    from nutriroll.domain.roll import (  # pyright: ignore[reportPrivateUsage]
+        ChosenComponent,
+        macro_violations,
+    )
+
+    component = _component_100g(Category.BASE, "X", protein_g=5)
+    chosen = [ChosenComponent(component=component, score=1.0, reasons=())]
+    assert macro_violations(chosen, None) == []
+
+
+def test_macro_violations_ignores_target_mode() -> None:
+    """'target' mode is soft — _macro_violations must never report it."""
+    from nutriroll.domain.roll import (  # pyright: ignore[reportPrivateUsage]
+        ChosenComponent,
+        MacroTarget,
+        MacroTargets,
+        macro_violations,
+    )
+
+    component = _component_100g(Category.BASE, "LowProtein", protein_g=5)
+    chosen = [ChosenComponent(component=component, score=1.0, reasons=())]
+    # protein_g=5g actual, target=100g, but mode='target' → no violation
+    targets = MacroTargets(protein_g=MacroTarget(value=100, mode="target"))
+    assert macro_violations(chosen, targets) == []
+
+
+def test_macro_violations_detects_min_breach() -> None:
+    from nutriroll.domain.roll import (  # pyright: ignore[reportPrivateUsage]
+        ChosenComponent,
+        MacroTarget,
+        MacroTargets,
+        macro_violations,
+    )
+
+    component = _component_100g(Category.BASE, "LowProtein", protein_g=5)
+    chosen = [ChosenComponent(component=component, score=1.0, reasons=())]
+    targets = MacroTargets(protein_g=MacroTarget(value=30, mode="min"))
+    violations = macro_violations(chosen, targets)
+    assert ("protein_g", "min") in violations
+
+
+def test_macro_violations_detects_max_breach() -> None:
+    from nutriroll.domain.roll import (  # pyright: ignore[reportPrivateUsage]
+        ChosenComponent,
+        MacroTarget,
+        MacroTargets,
+        macro_violations,
+    )
+
+    component = _component_100g(Category.BASE, "HighFat", fat_g=20)
+    chosen = [ChosenComponent(component=component, score=1.0, reasons=())]
+    targets = MacroTargets(fat_g=MacroTarget(value=10, mode="max"))
+    violations = macro_violations(chosen, targets)
+    assert ("fat_g", "max") in violations
+
+
+def test_macro_violations_no_breach_when_satisfied() -> None:
+    from nutriroll.domain.roll import (  # pyright: ignore[reportPrivateUsage]
+        ChosenComponent,
+        MacroTarget,
+        MacroTargets,
+        macro_violations,
+    )
+
+    component = _component_100g(Category.BASE, "HighProtein", protein_g=40)
+    chosen = [ChosenComponent(component=component, score=1.0, reasons=())]
+    targets = MacroTargets(protein_g=MacroTarget(value=30, mode="min"))
+    assert macro_violations(chosen, targets) == []
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_min_protein_constraint_enforced_by_step_d(seed: int) -> None:
+    """Step D resampling must satisfy min protein across all seeds when the pool allows it.
+
+    HighProtein: 40g/100g x 100g portion = 40g per bowl slot.
+    LowProtein:   5g/100g x 100g portion =  5g per bowl slot.
+    Constraint: protein_g ≥ 30g → only HighProtein can satisfy it.
+    """
+    from nutriroll.domain.roll import MacroTarget, MacroTargets, bowl_macro_totals
+
+    high = _component_100g(Category.BASE, "HighProtein", protein_g=40)
+    low = _component_100g(Category.BASE, "LowProtein", protein_g=5)
+    req = RollRequest(
+        slots=(SlotSpec(category=Category.BASE),),
+        macro_targets=MacroTargets(protein_g=MacroTarget(value=30, mode="min")),
+        seed=seed,
+    )
+    bowl = roll([high, low], req, max_resamples=5)
+    totals = bowl_macro_totals(bowl.slots)
+    assert totals["protein_g"] >= 30, (
+        f"seed={seed}: expected ≥30g protein, got {totals['protein_g']:.1f}g"
+    )
+
+
+@pytest.mark.parametrize("seed", range(10))
+def test_max_fat_constraint_enforced_by_step_d(seed: int) -> None:
+    """Step D resampling must satisfy max fat across all seeds when the pool allows it.
+
+    HighFat: 15g/100g x 100g portion = 15g per bowl slot.
+    LowFat:   2g/100g x 100g portion =  2g per bowl slot.
+    Constraint: fat_g ≤ 10g → only LowFat can satisfy it.
+    """
+    from nutriroll.domain.roll import MacroTarget, MacroTargets, bowl_macro_totals
+
+    high_fat = _component_100g(Category.BASE, "HighFat", fat_g=15)
+    low_fat = _component_100g(Category.BASE, "LowFat", fat_g=2)
+    req = RollRequest(
+        slots=(SlotSpec(category=Category.BASE),),
+        macro_targets=MacroTargets(fat_g=MacroTarget(value=10, mode="max")),
+        seed=seed,
+    )
+    bowl = roll([high_fat, low_fat], req, max_resamples=5)
+    totals = bowl_macro_totals(bowl.slots)
+    assert totals["fat_g"] <= 10, (
+        f"seed={seed}: expected ≤10g fat, got {totals['fat_g']:.1f}g"
+    )
+
+
+def test_target_mode_does_not_force_resampling() -> None:
+    """'target' mode is soft — Step D must not resample just because of a target violation.
+
+    With zero macro_target_fit weight and 'target' mode, the algorithm may pick any
+    component, but it must not loop indefinitely or crash.
+    """
+    from nutriroll.domain.roll import MacroTarget, MacroTargets
+
+    high = _component_100g(Category.BASE, "HighProtein", protein_g=40)
+    low = _component_100g(Category.BASE, "LowProtein", protein_g=5)
+    req = RollRequest(
+        slots=(SlotSpec(category=Category.BASE),),
+        macro_targets=MacroTargets(protein_g=MacroTarget(value=100, mode="target")),
+        weights=FeatureWeights(
+            taste_match=0,
+            novelty=0,
+            price_fit=0,
+            nutrition_fit=0,
+            time_fit=0,
+            pantry_bonus=0,
+            macro_target_fit=0,
+        ),
+        seed=42,
+    )
+    # Should complete without resampling — 'target' mode never triggers Step D.
+    bowl = roll([high, low], req, max_resamples=5)
+    assert len(bowl.slots) == 1
+
+
 # ---------------------------------------------------------------------------
 # Phase 12 — portions metadata
 # ---------------------------------------------------------------------------
