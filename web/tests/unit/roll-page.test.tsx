@@ -128,6 +128,31 @@ describe("RollPage", () => {
     });
   });
 
+  it("rolls from a natural-language prompt", async () => {
+    postMock.mockResolvedValueOnce({
+      data: SAMPLE_BOWL,
+      error: undefined,
+      response: { status: 200 },
+    });
+
+    render(wrap(<RollPage />));
+
+    fireEvent.change(screen.getByPlaceholderText(enMessages.roll.prompt.placeholder), {
+      target: { value: "spicy, high protein, under 600 kcal" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: enMessages.roll.prompt.button }));
+
+    expect(await screen.findByText("Brown rice")).toBeInTheDocument();
+    expect(postMock).toHaveBeenCalledWith(
+      "/v1/roll",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          prompt: "spicy, high protein, under 600 kcal",
+        }),
+      }),
+    );
+  });
+
   it("re-rolls a single slot via the slot endpoint", async () => {
     postMock
       .mockResolvedValueOnce({
@@ -157,6 +182,46 @@ describe("RollPage", () => {
         body: expect.objectContaining({
           slot_category: "base",
           exclude_component_ids: ["11111111-1111-1111-1111-111111111111"],
+        }),
+      }),
+    );
+  });
+
+  it("keeps the last prompt attached to rerolls", async () => {
+    postMock
+      .mockResolvedValueOnce({
+        data: SAMPLE_BOWL,
+        error: undefined,
+        response: { status: 200 },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          component: { ...SAMPLE_COMPONENT, name: "Quinoa" },
+          score: 0.5,
+          reasons: ["you haven't had this recently"],
+        },
+        error: undefined,
+        response: { status: 200 },
+      });
+
+    render(wrap(<RollPage />));
+
+    fireEvent.change(screen.getByPlaceholderText(enMessages.roll.prompt.placeholder), {
+      target: { value: "quick weekday high protein" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: enMessages.roll.prompt.button }));
+    await screen.findByText("Brown rice");
+
+    fireEvent.click(screen.getByRole("button", { name: enMessages.roll.rerollSlot }));
+
+    expect(await screen.findByText("Quinoa")).toBeInTheDocument();
+    expect(postMock).toHaveBeenLastCalledWith(
+      "/v1/roll/slot",
+      expect.objectContaining({
+        body: expect.objectContaining({
+          request: expect.objectContaining({
+            prompt: "quick weekday high protein",
+          }),
         }),
       }),
     );

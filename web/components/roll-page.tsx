@@ -1,6 +1,14 @@
 "use client";
 
-import { ChefHat, Dice5, Flame, Salad, Sparkles, Utensils } from "lucide-react";
+import {
+  ChefHat,
+  Dice5,
+  Flame,
+  LoaderCircle,
+  Salad,
+  Sparkles,
+  Utensils,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -24,6 +32,8 @@ type Status =
   | { kind: "rolling" }
   | { kind: "ok"; bowl: RolledBowl }
   | { kind: "error"; message: string };
+
+type PendingAction = "roll" | "prompt" | "reroll" | null;
 
 interface RollControls {
   timeBudgetMin: number | "";
@@ -91,6 +101,26 @@ function parseCsv(input: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+function formatApiError(
+  error: unknown,
+  response: { status: number },
+): string {
+  if (typeof error === "object" && error) {
+    if ("detail" in error && typeof error.detail === "string") {
+      return error.detail;
+    }
+    if ("detail" in error && typeof error.detail === "object" && error.detail) {
+      return JSON.stringify(error.detail);
+    }
+    if ("title" in error && "detail" in error) {
+      const title = typeof error.title === "string" ? error.title : "";
+      const detail = typeof error.detail === "string" ? error.detail : "";
+      return [title, detail].filter(Boolean).join(": ");
+    }
+  }
+  return `HTTP ${response.status}`;
+}
+
 export function RollPage() {
   const t = useTranslations("roll");
   const tDirection = useTranslations("roll.direction");
@@ -104,6 +134,9 @@ export function RollPage() {
   const [controls, setControls] = useState<RollControls>(INITIAL_CONTROLS);
   const [direction, setDirection] = useState<DirectionState>(INITIAL_DIRECTION);
   const [macroTargets, setMacroTargets] = useState<MacroTargetsState>({});
+  const [promptText, setPromptText] = useState("");
+  const [activePrompt, setActivePrompt] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [availableEquipment, setAvailableEquipment] = useState<readonly Equipment[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [saveOpen, setSaveOpen] = useState(false);
@@ -179,7 +212,7 @@ export function RollPage() {
     });
   };
 
-  const buildRequestBody = useCallback(() => {
+  const buildRequestBody = useCallback((options?: { prompt?: string | null }) => {
     const forced: Partial<Record<Category, CookingMethod>> = {};
     if (controls.forceBaseMethod !== "") {
       forced.base = controls.forceBaseMethod;
@@ -196,6 +229,7 @@ export function RollPage() {
         : Object.fromEntries(targetEntries.map(([k, v]) => [k, { value: v.value, mode: v.mode }]));
     return {
       slots: [...DEFAULT_SLOTS],
+      ...(options?.prompt !== undefined ? { prompt: options.prompt } : {}),
       time_budget_min: controls.timeBudgetMin === "" ? null : Number(controls.timeBudgetMin),
       dietary_mode: controls.dietaryMode === "" ? null : controls.dietaryMode,
       allergens_excluded: parseCsv(controls.allergensCsv),
@@ -216,21 +250,23 @@ export function RollPage() {
     };
   }, [controls, direction, macroTargets, availableEquipment]);
 
-  const rollAll = useCallback(async () => {
+  const rollAll = useCallback(async (mode: "roll" | "prompt") => {
+    const prompt = mode === "prompt" ? promptText.trim() : null;
+    setPendingAction(mode);
     setStatus({ kind: "rolling" });
     try {
       const { data, error, response } = await apiClient.POST("/v1/roll", {
-        body: buildRequestBody(),
+        body: buildRequestBody(mode === "prompt" ? { prompt } : undefined),
       });
       if (error || !data) {
-        const message =
-          typeof error === "object" && error && "detail" in error
-            ? JSON.stringify(error.detail)
-            : `HTTP ${response.status}`;
+        const message = formatApiError(error, response);
         setStatus({ kind: "error", message });
+        setPendingAction(null);
         return;
       }
+      setActivePrompt(prompt);
       setStatus({ kind: "ok", bowl: data });
+      setPendingAction(null);
       void apiClient.POST("/v1/history", {
         body: {
           kind: "rolled",
@@ -245,44 +281,48 @@ export function RollPage() {
         },
       });
     } catch (err) {
+      setPendingAction(null);
       setStatus({
         kind: "error",
         message: err instanceof Error ? err.message : "unknown",
       });
     }
-  }, [buildRequestBody]);
+  }, [buildRequestBody, promptText]);
 
   const rerollSlot = useCallback(
     async (index: number, slot: RolledSlot) => {
       if (status.kind !== "ok") return;
       const previousBowl = status.bowl;
+      setPendingAction("reroll");
       try {
         const { data, error, response } = await apiClient.POST("/v1/roll/slot", {
           body: {
-            request: buildRequestBody(),
+            request: buildRequestBody(
+              activePrompt === null ? undefined : { prompt: activePrompt },
+            ),
             slot_category: slot.component.category,
             exclude_component_ids: [slot.component.id],
           },
         });
         if (error || !data) {
-          const message =
-            typeof error === "object" && error && "detail" in error
-              ? JSON.stringify(error.detail)
-              : `HTTP ${response.status}`;
+          const message = formatApiError(error, response);
           setStatus({ kind: "error", message });
+          setPendingAction(null);
           return;
         }
         const nextSlots = [...previousBowl.slots];
         nextSlots[index] = data;
         setStatus({ kind: "ok", bowl: { slots: nextSlots } });
+        setPendingAction(null);
       } catch (err) {
+        setPendingAction(null);
         setStatus({
           kind: "error",
           message: err instanceof Error ? err.message : "unknown",
         });
       }
     },
-    [buildRequestBody, status],
+    [activePrompt, buildRequestBody, status],
   );
 
   const goCook = useCallback(() => {
@@ -599,16 +639,55 @@ export function RollPage() {
         </CardContent>
       </Card>
 
-      <Button
-        type="button"
-        size="lg"
-        onClick={() => void rollAll()}
-        disabled={status.kind === "rolling"}
-        className="w-full"
-      >
-        <Dice5 aria-hidden size={18} strokeWidth={2.4} />
-        {status.kind === "rolling" ? t("rolling") : t("rollButton")}
-      </Button>
+      <Card>
+        <CardContent className="grid gap-3 p-4">
+          <label className="grid gap-1.5 text-sm">
+            <span className="font-medium">{t("prompt.label")}</span>
+            <div className="relative">
+              <textarea
+                value={promptText}
+                onChange={(e) => setPromptText(e.target.value)}
+                placeholder={t("prompt.placeholder")}
+                rows={3}
+                disabled={status.kind === "rolling"}
+                className="min-h-24 w-full rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3 py-2 text-sm outline-none transition focus:border-[color:var(--color-brand)] focus:ring-2 focus:ring-[color:var(--color-brand)]/20 disabled:cursor-not-allowed disabled:opacity-70"
+              />
+              {pendingAction === "prompt" && status.kind === "rolling" && (
+                <span className="pointer-events-none absolute right-3 top-3 text-[color:var(--color-muted)]">
+                  <LoaderCircle aria-hidden size={16} className="animate-spin" />
+                </span>
+              )}
+            </div>
+          </label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button
+              type="button"
+              size="lg"
+              onClick={() => void rollAll("roll")}
+              disabled={status.kind === "rolling"}
+              className="w-full"
+            >
+              <Dice5 aria-hidden size={18} strokeWidth={2.4} />
+              {status.kind === "rolling" && pendingAction === "roll"
+                ? t("rolling")
+                : t("rollButton")}
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              onClick={() => void rollAll("prompt")}
+              disabled={status.kind === "rolling" || promptText.trim() === ""}
+              className="w-full"
+            >
+              <Sparkles aria-hidden size={18} strokeWidth={2.2} />
+              {status.kind === "rolling" && pendingAction === "prompt"
+                ? t("prompt.loading")
+                : t("prompt.button")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {status.kind === "error" && (
         <output
@@ -781,6 +860,7 @@ export function RollPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => void rerollSlot(idx, slot)}
+                          disabled={pendingAction === "reroll"}
                         >
                           <Dice5 aria-hidden size={14} />
                           {t("rerollSlot")}

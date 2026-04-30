@@ -9,6 +9,7 @@ class ProblemDetail(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     type: str = "about:blank"
+    code: str | None = None
     title: str
     status: int
     detail: str

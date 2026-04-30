@@ -5,6 +5,8 @@ from typing import Any
 import pytest
 from httpx import AsyncClient
 
+from nutriroll.domain.roll_prompt_parser import PromptParseError, RollConstraints
+
 
 def _topping_payload() -> dict[str, Any]:
     return {
@@ -126,6 +128,36 @@ def _sauce_payload() -> dict[str, Any]:
     }
 
 
+def _sesame_free_sauce_payload() -> dict[str, Any]:
+    return {
+        "category": "sauce",
+        "name": "Lemon Herb Dressing",
+        "image_url": None,
+        "macros_per_100g": {
+            "kcal": 120.0,
+            "carbs_g": 6.0,
+            "protein_g": 1.0,
+            "fat_g": 10.0,
+            "fiber_g": 0.5,
+        },
+        "default_portion": {"value": 20.0, "unit": "g"},
+        "default_cooking_method": "whisk_cold",
+        "cooking_methods": [
+            {
+                "method": "whisk_cold",
+                "approx_minutes": 2,
+                "can_cook_with_others": True,
+                "notes": None,
+            }
+        ],
+        "flavor_tags": ["tangy", "herbaceous"],
+        "dietary_tags": ["vegan"],
+        "allergens": [],
+        "shelf_life_days": 14,
+        "blacklisted": False,
+    }
+
+
 async def _seed_pool(client: AsyncClient) -> None:
     for payload in (
         _base_payload(),
@@ -199,6 +231,58 @@ async def test_roll_respects_blacklist(client: AsyncClient) -> None:
     }
     response = await client.post("/v1/roll", json=body)
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_roll_prompt_constraints_are_applied(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _seed_pool(client)
+    response = await client.post("/v1/components", json=_sesame_free_sauce_payload())
+    assert response.status_code == 201, response.text
+
+    def _fake_parse_prompt(self, prompt: str, profile: Any) -> RollConstraints:
+        assert prompt == "no sesame"
+        return RollConstraints(allergen_exclusions=frozenset({"sesame"}))
+
+    monkeypatch.setattr(
+        "nutriroll.api.routers.roll.RollPromptParser.parse_prompt",
+        _fake_parse_prompt,
+    )
+
+    roll_response = await client.post(
+        "/v1/roll",
+        json={
+            "slots": [{"category": "sauce", "count": 1}],
+            "prompt": "no sesame",
+            "seed": 4,
+        },
+    )
+    assert roll_response.status_code == 200, roll_response.text
+    assert roll_response.json()["slots"][0]["component"]["name"] == "Lemon Herb Dressing"
+
+
+@pytest.mark.asyncio
+async def test_roll_prompt_parse_failure_returns_problem_detail(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    await _seed_pool(client)
+
+    def _fake_parse_prompt(self, prompt: str, profile: Any) -> RollConstraints:
+        raise PromptParseError("Try a simpler prompt.")
+
+    monkeypatch.setattr(
+        "nutriroll.api.routers.roll.RollPromptParser.parse_prompt",
+        _fake_parse_prompt,
+    )
+
+    response = await client.post(
+        "/v1/roll",
+        json={"slots": [{"category": "base", "count": 1}], "prompt": "???"},
+    )
+    assert response.status_code == 400
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["code"] == "PROMPT_PARSE_FAILED"
 
 
 @pytest.mark.asyncio

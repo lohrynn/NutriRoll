@@ -978,6 +978,8 @@ export interface components {
         };
         /** ProblemDetail */
         ProblemDetail: {
+            /** Code */
+            code?: string | null;
             /** Detail */
             detail: string;
             /** Instance */
@@ -1100,6 +1102,8 @@ export interface components {
              * @default 1
              */
             portions: number;
+            /** Prompt */
+            prompt?: string | null;
             /** Recent Component Ids */
             recent_component_ids?: string[];
             /** Seed */
@@ -2138,6 +2142,15 @@ export interface operations {
                     "application/json": components["schemas"]["RolledBowlSchema"];
                 };
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -2169,6 +2182,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RolledSlotSchema"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
                 };
             };
             /** @description Validation Error */

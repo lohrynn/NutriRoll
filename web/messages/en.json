@@ -81,6 +81,12 @@
     "allergensPlaceholder": "comma-separated, e.g. dairy, nuts",
     "rollButton": "Roll a bowl",
     "rolling": "Rolling…",
+    "prompt": {
+      "label": "Or describe what you want…",
+      "placeholder": "e.g. spicy, high protein, under 600 kcal",
+      "button": "Roll from prompt",
+      "loading": "Parsing prompt…"
+    },
     "results": "Your bowl",
     "rerollSlot": "Reroll",
     "cookNow": "Cook now",

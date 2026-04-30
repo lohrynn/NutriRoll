@@ -166,6 +166,7 @@ class RollRequestSchema(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     slots: list[SlotSpecSchema] = Field(min_length=1, max_length=8)
+    prompt: str | None = Field(default=None, max_length=512)
     dietary_mode: str | None = Field(default=None, max_length=32)
     allergens_excluded: list[str] = Field(default_factory=list, max_length=32)
     blacklisted_ids: list[UUID] = Field(default_factory=list[UUID])
