@@ -5,7 +5,10 @@ Pure recipe construction over the chosen components of a rolled bowl.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from dataclasses import replace
+from typing import Literal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from nutriroll.api.schemas.recipe import (
@@ -17,10 +20,34 @@ from nutriroll.db.session import get_session
 from nutriroll.domain.component import Component
 from nutriroll.domain.recipe import (
     IncompatibleForcedMethodError,
+    Recipe,
+    RecipeBlock,
+    RecipeStep,
     build_recipe,
 )
+from nutriroll.domain.recipe_step_polish import RecipeStepPolish
 
 router = APIRouter(prefix="/v1/recipe", tags=["recipe"])
+
+PolishTone = Literal["concise", "enthusiastic", "calm", "professional"]
+
+
+def _flatten_steps(recipe: Recipe) -> list[RecipeStep]:
+    return [step for block in recipe.blocks for step in block.steps]
+
+
+def _with_polished_steps(recipe: Recipe, polished_steps: list[RecipeStep]) -> Recipe:
+    if not polished_steps:
+        return recipe
+
+    next_index = 0
+    blocks: list[RecipeBlock] = []
+    for block in recipe.blocks:
+        block_count = len(block.steps)
+        next_steps = tuple(polished_steps[next_index : next_index + block_count])
+        blocks.append(replace(block, steps=next_steps))
+        next_index += block_count
+    return replace(recipe, blocks=tuple(blocks))
 
 
 @router.post(
@@ -30,6 +57,7 @@ router = APIRouter(prefix="/v1/recipe", tags=["recipe"])
 )
 async def build_recipe_endpoint(
     payload: BuildRecipeRequestSchema,
+    polish: PolishTone | None = Query(default=None),
     session: AsyncSession = Depends(get_session),
 ) -> RecipeSchema:
     repo = ComponentRepository(session)
@@ -56,7 +84,15 @@ async def build_recipe_endpoint(
                 "method": exc.method.value,
             },
         ) from exc
-    return RecipeSchema.from_domain(recipe)
+    polished = False
+    if polish is not None:
+        step_polisher = RecipeStepPolish()
+        raw_steps = _flatten_steps(recipe)
+        polished_steps = await step_polisher.polish_steps(raw_steps, tone=polish)
+        if step_polisher.last_applied:
+            recipe = _with_polished_steps(recipe, polished_steps)
+            polished = True
+    return RecipeSchema.from_domain(recipe, polished=polished)
 
 
 __all__ = ["router"]

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,11 +6,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "@/messages/en.json";
 
 const postMock = vi.fn();
+const useComponentMetaMock = vi.fn<() => { llm_configured: boolean } | null>(() => null);
 
 vi.mock("@/lib/api/client", () => ({
   apiClient: {
     POST: (...args: unknown[]) => postMock(...args),
   },
+}));
+
+vi.mock("@/lib/components/meta", () => ({
+  useComponentMeta: () => useComponentMetaMock(),
 }));
 
 vi.mock("next/link", () => ({
@@ -71,6 +76,8 @@ const SAMPLE_RECIPE = {
 
 beforeEach(() => {
   postMock.mockReset();
+  useComponentMetaMock.mockReset();
+  useComponentMetaMock.mockReturnValue(null);
   window.sessionStorage.clear();
 });
 
@@ -107,6 +114,54 @@ describe("RecipePage", () => {
         }),
       }),
     );
+  });
+
+  it("shows the polish toggle when LLM features are available and refetches with the tone", async () => {
+    useComponentMetaMock.mockReturnValue({ llm_configured: true });
+    window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(SAMPLE_BOWL));
+    postMock
+      .mockResolvedValueOnce({
+        data: SAMPLE_RECIPE,
+        error: undefined,
+        response: { status: 200 },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          ...SAMPLE_RECIPE,
+          polished: true,
+          blocks: [
+            {
+              ...SAMPLE_RECIPE.blocks[0],
+              steps: [
+                {
+                  text: "Cook the brown rice for about 25 minutes.",
+                  offset_min: 0,
+                  duration_min: 25,
+                },
+              ],
+            },
+          ],
+        },
+        error: undefined,
+        response: { status: 200 },
+      });
+
+    render(wrap(<RecipePage />));
+
+    expect(await screen.findByText("Polish steps")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Concise" }));
+
+    await waitFor(() => {
+      expect(postMock).toHaveBeenLastCalledWith(
+        "/v1/recipe",
+        expect.objectContaining({
+          params: { query: { polish: "concise" } },
+        }),
+      );
+    });
+    expect(
+      await screen.findByText("Cook the brown rice for about 25 minutes."),
+    ).toBeInTheDocument();
   });
 
   it("surfaces an error when the recipe endpoint fails", async () => {

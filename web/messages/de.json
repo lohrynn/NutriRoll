@@ -162,6 +162,14 @@
     "totalMinutes": "Gesamtzeit: ~{minutes} Min.",
     "minutes": "~{minutes} Min.",
     "error": "Konnte kein Rezept erstellen: {message}",
+    "polish": {
+      "label": "Schritte glätten",
+      "help": "Formuliert die Schritte optional in einem einheitlicheren Ton um.",
+      "loading": "Schritttexte werden aktualisiert…",
+      "off": "Aus",
+      "concise": "Knapp",
+      "enthusiastic": "Motivierend"
+    },
     "timer": {
       "start": "Timer starten",
       "pause": "Timer pausieren",

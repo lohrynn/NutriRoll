@@ -8,6 +8,9 @@ from uuid import uuid4
 import pytest
 from httpx import AsyncClient
 
+from nutriroll.api.routers import recipe as recipe_router
+from nutriroll.domain.recipe import RecipeStep
+
 
 def _base_payload() -> dict[str, Any]:
     return {
@@ -179,3 +182,61 @@ async def test_recipe_incompatible_forced_method_422(
 async def test_recipe_validates_request(client: AsyncClient) -> None:
     response = await client.post("/v1/recipe", json={"component_ids": []})
     assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_recipe_polish_query_returns_polished_steps(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    base_id = await _create(client, _base_payload())
+
+    class _FakePolisher:
+        def __init__(self) -> None:
+            self.last_applied = True
+
+        async def polish_steps(
+            self,
+            directions: list[RecipeStep],
+            tone: str = "concise",
+        ) -> list[RecipeStep]:
+            assert tone == "concise"
+            return [
+                RecipeStep(
+                    text="Cook the brown rice for about 25 minutes.",
+                    offset_min=direction.offset_min,
+                    duration_min=direction.duration_min,
+                )
+                for direction in directions
+            ]
+
+    monkeypatch.setattr(recipe_router, "RecipeStepPolish", _FakePolisher)
+
+    response = await client.post(
+        "/v1/recipe",
+        params={"polish": "concise"},
+        json={"component_ids": [base_id]},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["polished"] is True
+    assert body["blocks"][0]["steps"][0]["text"] == "Cook the brown rice for about 25 minutes."
+
+
+@pytest.mark.asyncio
+async def test_recipe_polish_unavailable_returns_raw_steps_200_ok(
+    client: AsyncClient,
+) -> None:
+    base_id = await _create(client, _base_payload())
+
+    response = await client.post(
+        "/v1/recipe",
+        params={"polish": "concise"},
+        json={"component_ids": [base_id]},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["polished"] is False
+    assert body["blocks"][0]["steps"][0]["text"] == "Boil brown rice (80g per portion) for ~25 min."

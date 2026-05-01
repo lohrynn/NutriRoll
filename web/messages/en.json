@@ -168,6 +168,14 @@
     "totalMinutes": "Total time: ~{minutes} min.",
     "minutes": "~{minutes} min",
     "error": "Couldn't build recipe: {message}",
+    "polish": {
+      "label": "Polish steps",
+      "help": "Optionally rephrase the step text for a more consistent tone.",
+      "loading": "Refreshing step phrasing…",
+      "off": "Off",
+      "concise": "Concise",
+      "enthusiastic": "Enthusiastic"
+    },
     "timer": {
       "start": "Start timer",
       "pause": "Pause timer",

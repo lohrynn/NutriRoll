@@ -9,18 +9,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
+import { useComponentMeta } from "@/lib/components/meta";
 import type { Category } from "@/lib/components/types";
 import { requestNotificationPermission, useCookTimer } from "@/lib/cook/timers";
 import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
 import type { Recipe } from "@/lib/recipe/types";
 import type { RolledBowl } from "@/lib/roll/types";
 
-type Status =
-  | { kind: "loading" }
-  | { kind: "missing" }
-  | { kind: "building" }
-  | { kind: "ok"; recipe: Recipe }
-  | { kind: "error"; message: string };
+type PageState = "loading" | "missing" | "ready" | "error";
+type PolishMode = "off" | "concise" | "enthusiastic";
 
 const CATEGORY_ICON: Record<Category, typeof Salad> = {
   base: Utensils,
@@ -246,46 +243,101 @@ export function RecipePage() {
   const t = useTranslations("recipe");
   const tCategory = useTranslations("components.category");
   const tMethod = useTranslations("components.method");
-  const [status, setStatus] = useState<Status>({ kind: "loading" });
+  const meta = useComponentMeta();
+  const [pageState, setPageState] = useState<PageState>("loading");
+  const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [bowl, setBowl] = useState<RolledBowl | null>(null);
+  const [isRefreshingSteps, setIsRefreshingSteps] = useState(false);
+  const [polishMode, setPolishMode] = useState<PolishMode>("off");
 
-  const buildRecipe = useCallback(async (bowl: RolledBowl) => {
-    setStatus({ kind: "building" });
-    try {
-      const { data, error, response } = await apiClient.POST("/v1/recipe", {
-        body: {
-          component_ids: bowl.slots.map((s) => s.component.id),
-          forced_methods: {},
-        },
-      });
-      if (error || !data) {
-        const message =
-          typeof error === "object" && error && "detail" in error
-            ? JSON.stringify(error.detail)
-            : `HTTP ${response.status}`;
-        setStatus({ kind: "error", message });
-        return;
+  const buildRecipe = useCallback(
+    async (rolledBowl: RolledBowl, polish: PolishMode, keepRecipeVisible = false) => {
+      if (keepRecipeVisible) {
+        setIsRefreshingSteps(true);
+      } else {
+        setPageState("loading");
       }
-      setStatus({ kind: "ok", recipe: data });
-    } catch (err) {
-      setStatus({
-        kind: "error",
-        message: err instanceof Error ? err.message : "unknown",
-      });
-    }
-  }, []);
+      setErrorMessage(null);
+
+      const request =
+        polish === "off"
+          ? {
+              body: {
+                component_ids: rolledBowl.slots.map((s) => s.component.id),
+                forced_methods: {},
+              },
+            }
+          : {
+              params: { query: { polish } },
+              body: {
+                component_ids: rolledBowl.slots.map((s) => s.component.id),
+                forced_methods: {},
+              },
+            };
+
+      try {
+        const { data, error, response } = await apiClient.POST("/v1/recipe", request);
+        if (error || !data) {
+          const message =
+            typeof error === "object" && error && "detail" in error
+              ? JSON.stringify(error.detail)
+              : `HTTP ${response.status}`;
+          setErrorMessage(message);
+          if (!keepRecipeVisible) setPageState("error");
+          return;
+        }
+        setRecipe(data);
+        setPageState("ready");
+      } catch (err) {
+        setErrorMessage(err instanceof Error ? err.message : "unknown");
+        if (!keepRecipeVisible) setPageState("error");
+      } finally {
+        setIsRefreshingSteps(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
-    const bowl = readBowlFromStorage();
-    if (!bowl) {
-      setStatus({ kind: "missing" });
+    const storedBowl = readBowlFromStorage();
+    if (!storedBowl) {
+      setPageState("missing");
       return;
     }
-    void buildRecipe(bowl);
+    setBowl(storedBowl);
+    void buildRecipe(storedBowl, "off");
   }, [buildRecipe]);
+
+  const onPolishModeChange = (nextMode: PolishMode) => {
+    if (nextMode === polishMode || bowl === null) return;
+    setPolishMode(nextMode);
+    void buildRecipe(bowl, nextMode, recipe !== null);
+  };
+
+  const showPolishToggle = meta?.llm_configured === true && recipe !== null;
+
+  const renderStepSkeleton = (count: number) => (
+    <div aria-hidden className="grid gap-2">
+      {Array.from({ length: Math.max(1, count) }, (_, idx) => (
+        <div
+          key={`step-skeleton-${count}-${idx % 2 === 0 ? "wide" : "narrow"}`}
+          className="grid gap-2"
+        >
+          <div className="h-3 w-12 animate-pulse rounded bg-[color:var(--color-surface-2)]" />
+          <div
+            className={`h-4 animate-pulse rounded bg-[color:var(--color-surface-2)] ${
+              idx % 2 === 0 ? "w-full" : "w-4/5"
+            }`}
+          />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="grid gap-4">
-      {(status.kind === "loading" || status.kind === "building") && (
+      {pageState === "loading" && recipe === null && (
         <output
           aria-live="polite"
           className="rounded-xl bg-[color:var(--color-surface-2)] p-3 text-sm text-[color:var(--color-muted)]"
@@ -294,7 +346,7 @@ export function RecipePage() {
         </output>
       )}
 
-      {status.kind === "missing" && (
+      {pageState === "missing" && (
         <Card>
           <CardContent className="grid gap-3">
             <p className="text-sm">{t("missing")}</p>
@@ -308,16 +360,16 @@ export function RecipePage() {
         </Card>
       )}
 
-      {status.kind === "error" && (
+      {errorMessage !== null && (
         <output
           aria-live="polite"
           className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger)]/10 p-3 text-sm text-[color:var(--color-danger)]"
         >
-          {t("error", { message: status.message })}
+          {t("error", { message: errorMessage })}
         </output>
       )}
 
-      {status.kind === "ok" && (
+      {recipe !== null && pageState === "ready" && (
         <section aria-label={t("blocks")} className="grid gap-3">
           <Card>
             <CardContent className="flex items-center gap-3 p-4">
@@ -329,14 +381,47 @@ export function RecipePage() {
                   {t("blocks")}
                 </div>
                 <div className="font-semibold">
-                  {t("totalMinutes", { minutes: status.recipe.total_minutes })}
+                  {t("totalMinutes", { minutes: recipe.total_minutes })}
                 </div>
               </div>
             </CardContent>
           </Card>
 
+          {showPolishToggle && (
+            <Card>
+              <CardContent className="flex items-center justify-between gap-3 p-4">
+                <div className="grid gap-1">
+                  <div className="text-sm font-medium">{t("polish.label")}</div>
+                  <div className="text-xs text-[color:var(--color-muted)]">
+                    {isRefreshingSteps ? t("polish.loading") : t("polish.help")}
+                  </div>
+                </div>
+                <div
+                  role="group"
+                  aria-label={t("polish.label")}
+                  className="flex items-center gap-1 rounded-full bg-[color:var(--color-surface-2)] p-1"
+                >
+                  {(["off", "concise", "enthusiastic"] as const).map((option) => (
+                    <Button
+                      key={option}
+                      type="button"
+                      size="sm"
+                      variant={polishMode === option ? "secondary" : "ghost"}
+                      aria-pressed={polishMode === option}
+                      onClick={() => onPolishModeChange(option)}
+                      disabled={isRefreshingSteps}
+                      className="rounded-full px-3"
+                    >
+                      {t(`polish.${option}`)}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <ol className="grid gap-3">
-            {status.recipe.blocks.map((block) => {
+            {recipe.blocks.map((block) => {
               const Icon = CATEGORY_ICON[block.category];
               return (
                 <li key={`${block.category}-${block.method}-${block.title}`}>
@@ -362,32 +447,35 @@ export function RecipePage() {
                           <BlockTimer totalMinutes={block.total_minutes} />
                         </span>
                       </div>
-                      {block.steps.length > 0 && (
-                        <ol className="grid gap-1 border-l-2 border-[color:var(--color-border)] pl-3 text-sm">
-                          {block.steps.map((step, idx) => {
-                            const next = block.steps[idx + 1];
-                            const stepDurationMin =
-                              next !== undefined
-                                ? Math.max(0, next.offset_min - step.offset_min)
-                                : Math.max(0, block.total_minutes - step.offset_min);
-                            const stepKey = `${block.category}:${block.method}:${block.title}:${idx}`;
-                            return (
-                              <li key={`${step.text}-${idx}`} className="flex items-center gap-2">
-                                <span className="shrink-0 text-xs tabular-nums text-[color:var(--color-muted)]">
-                                  {String(step.offset_min).padStart(2, "0")}:00
-                                </span>
-                                <span className="flex-1">{step.text}</span>
-                                <StepTimer
-                                  stepKey={stepKey}
-                                  durationSec={Math.round(stepDurationMin * 60)}
-                                  blockTitle={block.title}
-                                  stepText={step.text}
-                                />
-                              </li>
-                            );
-                          })}
-                        </ol>
-                      )}
+                      {block.steps.length > 0 &&
+                        (isRefreshingSteps ? (
+                          renderStepSkeleton(block.steps.length)
+                        ) : (
+                          <ol className="grid gap-1 border-l-2 border-[color:var(--color-border)] pl-3 text-sm">
+                            {block.steps.map((step, idx) => {
+                              const next = block.steps[idx + 1];
+                              const stepDurationMin =
+                                next !== undefined
+                                  ? Math.max(0, next.offset_min - step.offset_min)
+                                  : Math.max(0, block.total_minutes - step.offset_min);
+                              const stepKey = `${block.category}:${block.method}:${block.title}:${idx}`;
+                              return (
+                                <li key={`${step.text}-${idx}`} className="flex items-center gap-2">
+                                  <span className="shrink-0 text-xs tabular-nums text-[color:var(--color-muted)]">
+                                    {String(step.offset_min).padStart(2, "0")}:00
+                                  </span>
+                                  <span className="flex-1">{step.text}</span>
+                                  <StepTimer
+                                    stepKey={stepKey}
+                                    durationSec={Math.round(stepDurationMin * 60)}
+                                    blockTitle={block.title}
+                                    stepText={step.text}
+                                  />
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        ))}
                     </CardContent>
                   </Card>
                 </li>

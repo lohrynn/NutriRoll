@@ -254,7 +254,9 @@ export interface paths {
     };
     "/v1/recipe": {
         parameters: {
-            query?: never;
+            query?: {
+                polish?: "concise" | "enthusiastic" | "calm" | "professional";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1055,6 +1057,11 @@ export interface components {
         RecipeSchema: {
             /** Blocks */
             blocks: components["schemas"]["RecipeBlockSchema"][];
+            /**
+             * Polished
+             * @default false
+             */
+            polished: boolean;
             /** Total Minutes */
             total_minutes: number;
         };
@@ -2089,7 +2096,9 @@ export interface operations {
     };
     build_recipe_endpoint_v1_recipe_post: {
         parameters: {
-            query?: never;
+            query?: {
+                polish?: "concise" | "enthusiastic" | "calm" | "professional";
+            };
             header?: never;
             path?: never;
             cookie?: never;

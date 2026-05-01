@@ -56,12 +56,14 @@ class RecipeSchema(BaseModel):
 
     blocks: list[RecipeBlockSchema]
     total_minutes: int
+    polished: bool = False
 
     @classmethod
-    def from_domain(cls, recipe: Recipe) -> RecipeSchema:
+    def from_domain(cls, recipe: Recipe, *, polished: bool = False) -> RecipeSchema:
         return cls(
             blocks=[RecipeBlockSchema.from_domain(b) for b in recipe.blocks],
             total_minutes=recipe.total_minutes,
+            polished=polished,
         )
 
 
