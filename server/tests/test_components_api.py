@@ -214,6 +214,9 @@ async def test_generate_component_returns_structured_payload(
     class _FakeBuilder:
         model = "test-model"
 
+        def __init__(self, *_: object, **__: object) -> None:
+            pass
+
         def build_from_prompt(
             self, prompt: str, profile: object | None
         ) -> LLMGeneratedComponent:
@@ -247,6 +250,9 @@ async def test_generate_component_returns_problem_detail_on_builder_error(
     class _FakeBuilder:
         model = "test-model"
 
+        def __init__(self, *_: object, **__: object) -> None:
+            pass
+
         def build_from_prompt(self, prompt: str, profile: object | None) -> LLMGeneratedComponent:
             raise LLMBuildError("The AI response was incomplete.")
 
@@ -271,6 +277,9 @@ async def test_generate_component_rate_limits_per_device(
     class _FakeBuilder:
         model = "test-model"
 
+        def __init__(self, *_: object, **__: object) -> None:
+            pass
+
         def build_from_prompt(self, prompt: str, profile: object | None) -> LLMGeneratedComponent:
             return LLMGeneratedComponent(
                 component=_generated_component("Quick quinoa"),
@@ -293,3 +302,17 @@ async def test_generate_component_rate_limits_per_device(
 
     assert first.status_code == 200
     assert second.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_generate_component_feature_disabled_returns_403(client: AsyncClient) -> None:
+    components_router._generate_rate_limit_cache.clear()
+
+    response = await client.post(
+        "/v1/components/generate",
+        json={"prompt": "make a bright herb sauce"},
+        headers={"x-device-id": "device-4"},
+    )
+
+    assert response.status_code == 403, response.text
+    assert response.json()["code"] == "LLM_FEATURE_DISABLED"

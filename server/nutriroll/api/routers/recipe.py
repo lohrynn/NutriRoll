@@ -16,6 +16,7 @@ from nutriroll.api.schemas.recipe import (
     RecipeSchema,
 )
 from nutriroll.db.repositories.components import ComponentRepository
+from nutriroll.db.repositories.profile import UserProfileRepository
 from nutriroll.db.session import get_session
 from nutriroll.domain.component import Component
 from nutriroll.domain.recipe import (
@@ -26,6 +27,7 @@ from nutriroll.domain.recipe import (
     build_recipe,
 )
 from nutriroll.domain.recipe_step_polish import RecipeStepPolish
+from nutriroll.domain.llm_config import LLMFeatureDisabledError, resolve_runtime_llm_config
 
 router = APIRouter(prefix="/v1/recipe", tags=["recipe"])
 
@@ -86,9 +88,16 @@ async def build_recipe_endpoint(
         ) from exc
     polished = False
     if polish is not None:
-        step_polisher = RecipeStepPolish()
+        stored_llm = await UserProfileRepository(session).get_stored_llm_config()
+        step_polisher = RecipeStepPolish(runtime_config=resolve_runtime_llm_config(stored_llm))
         raw_steps = _flatten_steps(recipe)
-        polished_steps = await step_polisher.polish_steps(raw_steps, tone=polish)
+        try:
+            polished_steps = await step_polisher.polish_steps(raw_steps, tone=polish)
+        except LLMFeatureDisabledError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={"code": "LLM_FEATURE_DISABLED", "feature": exc.feature},
+            ) from exc
         if step_polisher.last_applied:
             recipe = _with_polished_steps(recipe, polished_steps)
             polished = True

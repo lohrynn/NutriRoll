@@ -7,11 +7,19 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from nutriroll.api.schemas.roll import MacroTargetSchema
+from nutriroll.domain.llm_config import KNOWN_FEATURES, KNOWN_PROVIDERS, LLMConfig
 from nutriroll.domain.equipment import Equipment
 from nutriroll.domain.profile import UserProfile
 from nutriroll.domain.roll import MacroMode, MacroTargets
 
 DietaryMode = Literal["", "vegan", "vegetarian", "pescatarian"]
+LLMProviderSchema = Literal["openai", "anthropic", "google", "ollama", "custom"]
+LLMFeatureSchema = Literal[
+    "component_creation",
+    "prompt_rolls",
+    "recipe_polish",
+    "weekly_recaps",
+]
 
 
 class UserProfileRead(BaseModel):
@@ -100,4 +108,51 @@ class UserProfileUpdate(BaseModel):
         )
 
 
-__all__ = ["DietaryMode", "UserProfileRead", "UserProfileUpdate"]
+class LLMConfigRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled_features: list[LLMFeatureSchema] = Field(default_factory=list)
+    provider: LLMProviderSchema = "openai"
+    model: str = "gpt-4o-mini"
+    api_key_set: bool = False
+
+    @classmethod
+    def from_domain(cls, config: LLMConfig) -> "LLMConfigRead":
+        return cls(
+            enabled_features=config.enabled_features,  # type: ignore[arg-type]
+            provider=config.provider,  # type: ignore[arg-type]
+            model=config.model,
+            api_key_set=config.api_key_set,
+        )
+
+
+class LLMConfigUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled_features: list[LLMFeatureSchema] | None = None
+    provider: LLMProviderSchema | None = None
+    model: str | None = Field(default=None, max_length=256)
+    api_key: str | None = Field(default=None, max_length=4096)
+
+    def to_partial(self) -> dict[str, object]:
+        payload: dict[str, object] = {}
+        if self.enabled_features is not None:
+            payload["enabled_features"] = list(self.enabled_features)
+        if self.provider is not None:
+            payload["provider"] = self.provider
+        if self.model is not None:
+            payload["model"] = self.model.strip()
+        if self.api_key is not None:
+            payload["api_key"] = self.api_key
+        return payload
+
+
+__all__ = [
+    "DietaryMode",
+    "KNOWN_FEATURES",
+    "KNOWN_PROVIDERS",
+    "LLMConfigRead",
+    "LLMConfigUpdate",
+    "UserProfileRead",
+    "UserProfileUpdate",
+]

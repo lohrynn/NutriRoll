@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { apiClient } from "@/lib/api/client";
 import { useAllowedMethods, useCategories, useComponentMeta } from "@/lib/components/meta";
@@ -105,7 +105,19 @@ export function ComponentForm({ onCreated, editId, onUpdated, onCancel, initialV
   const allowed = useAllowedMethods(category);
   const categories = useCategories();
   const meta = useComponentMeta();
-  const isLlmConfigured = meta?.llm_configured ?? false;
+  const [isLlmConfigured, setIsLlmConfigured] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const result = await apiClient.GET("/v1/me/profile/llm");
+      if (cancelled || !result.data) return;
+      setIsLlmConfigured((result.data.enabled_features ?? []).includes("component_creation"));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function applyComponentValues(component: ComponentCreate | ComponentRead): void {
     setCategory(component.category);

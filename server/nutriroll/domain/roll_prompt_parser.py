@@ -14,6 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_valida
 from nutriroll.config import get_settings
 from nutriroll.domain.component import CookingMethod
 from nutriroll.domain.direction import CUISINE_BOOSTS
+from nutriroll.domain.llm_config import (
+    KNOWN_FEATURES,
+    LLMConfig,
+    LLMRuntimeConfig,
+    perform_llm_request_sync,
+    resolve_runtime_llm_config,
+)
 from nutriroll.domain.profile import UserProfile
 
 
@@ -131,21 +138,47 @@ class RollPromptParser:
     def __init__(
         self,
         *,
+        runtime_config: LLMRuntimeConfig | None = None,
         model: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
         timeout_seconds: float = 20.0,
     ) -> None:
         settings = get_settings()
-        self.model = model or settings.llm_model
-        self.api_key = api_key if api_key is not None else settings.openai_api_key
-        self.base_url = (base_url or settings.llm_base_url).rstrip("/")
+        resolved = resolve_runtime_llm_config(settings=settings)
+        enabled_features = (
+            list(KNOWN_FEATURES)
+            if runtime_config is None and any(value is not None for value in (model, api_key, base_url))
+            else list(resolved.public.enabled_features)
+        )
+        self.runtime_config = (
+            runtime_config
+            if runtime_config is not None
+            else LLMRuntimeConfig(
+                public=LLMConfig(
+                    enabled_features=enabled_features,
+                    provider=resolved.public.provider,
+                    model=model or resolved.model,
+                    api_key_set=bool(
+                        (api_key if api_key is not None else resolved.api_key).strip()
+                    ),
+                ),
+                provider=resolved.provider,
+                model=model or resolved.model,
+                api_key=api_key if api_key is not None else resolved.api_key,
+                base_url=(base_url or resolved.base_url).rstrip("/"),
+            )
+        )
+        self.model = self.runtime_config.model
+        self.api_key = self.runtime_config.api_key
+        self.base_url = self.runtime_config.base_url
         self.timeout_seconds = timeout_seconds
 
     def parse_prompt(self, prompt: str, profile: UserProfile | None = None) -> RollConstraints:
         normalized_prompt = prompt.strip()
         if normalized_prompt == "":
             return RollConstraints()
+        self.runtime_config.require_feature("prompt_rolls")
         if not self.api_key.strip():
             raise PromptParseError("Prompt-based rolling is not configured right now.")
 
@@ -200,27 +233,17 @@ class RollPromptParser:
     def _request_constraints_json(
         self, prompt: str, profile: UserProfile | None
     ) -> _LLMResponse:
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        body = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": self._system_prompt()},
-                {"role": "user", "content": self._user_prompt(prompt, profile)},
-            ],
-            "temperature": 0.1,
-            "response_format": {"type": "json_object"},
-        }
         try:
-            with httpx.Client(timeout=self.timeout_seconds) as client:
-                response = client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers=headers,
-                    json=body,
-                )
-                response.raise_for_status()
+            llm_response = perform_llm_request_sync(
+                self.runtime_config,
+                messages=[
+                    {"role": "system", "content": self._system_prompt()},
+                    {"role": "user", "content": self._user_prompt(prompt, profile)},
+                ],
+                temperature=0.1,
+                timeout_seconds=self.timeout_seconds,
+                response_format_json=True,
+            )
         except httpx.HTTPStatusError as exc:
             raise PromptParseError(self._http_error_message(exc.response)) from exc
         except httpx.HTTPError as exc:
@@ -228,19 +251,11 @@ class RollPromptParser:
                 "The AI parser is unavailable right now. Please try again in a moment."
             ) from exc
 
-        data = response.json()
-        choices = data.get("choices")
-        if not isinstance(choices, list) or not choices:
-            raise PromptParseError("The AI parser returned an empty response.")
-        first_choice = choices[0]
-        message = first_choice.get("message") if isinstance(first_choice, dict) else None
-        refusal = message.get("refusal") if isinstance(message, dict) else None
-        if refusal:
+        if llm_response.refusal:
             raise PromptParseError(
                 "I couldn't turn that description into roll constraints. Try being more specific."
             )
-        content = message.get("content") if isinstance(message, dict) else None
-        raw_output = self._coerce_message_content(content)
+        raw_output = llm_response.text
         if raw_output.strip() == "":
             raise PromptParseError("The AI parser returned an empty response.")
         return _LLMResponse(raw_output=raw_output)

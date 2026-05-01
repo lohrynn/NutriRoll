@@ -107,12 +107,12 @@ export function HistoryPageView() {
         recap: current.kind === "ready" ? current.recap : null,
       }));
       try {
-        const profileResult = await apiClient.GET("/v1/me/profile");
-        if (!profileResult.data) {
-          setRecapStatus({ kind: "error", recap: null, message: `HTTP ${profileResult.response.status}` });
+        const llmResult = await apiClient.GET("/v1/me/profile/llm");
+        if (!llmResult.data) {
+          setRecapStatus({ kind: "error", recap: null, message: `HTTP ${llmResult.response.status}` });
           return;
         }
-        if (!profileResult.data.llm_weekly_recap_enabled) {
+        if (!(llmResult.data.enabled_features ?? []).includes("weekly_recaps")) {
           setRecapStatus({ kind: "disabled", recap: null });
           return;
         }
@@ -126,6 +126,18 @@ export function HistoryPageView() {
           },
         });
         if (error || !data) {
+          const featureDisabled =
+            typeof error === "object" &&
+            error !== null &&
+            "detail" in error &&
+            typeof error.detail === "object" &&
+            error.detail !== null &&
+            "code" in error.detail &&
+            error.detail.code === "LLM_FEATURE_DISABLED";
+          if (featureDisabled) {
+            setRecapStatus({ kind: "disabled", recap: null });
+            return;
+          }
           setRecapStatus({
             kind: "error",
             recap: null,

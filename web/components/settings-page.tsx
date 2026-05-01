@@ -9,12 +9,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
-import { useComponentMeta, useDefaultEquipment, useEquipment } from "@/lib/components/meta";
+import { useDefaultEquipment, useEquipment } from "@/lib/components/meta";
 import type { ComponentRead, Equipment } from "@/lib/components/types";
 import {
   COMMON_ALLERGENS,
   DIETARY_MODES,
   type DietaryMode,
+  LLM_FEATURES,
+  LLM_PROVIDERS,
+  type LLMConfigRead,
+  type LLMConfigUpdate,
+  type LLMFeature,
+  type LLMProvider,
   type UserProfileRead,
   type UserProfileUpdate,
 } from "@/lib/profile/types";
@@ -33,6 +39,20 @@ type MacroKey = (typeof MACRO_KEYS)[number];
 type MacroTargetsState = Partial<Record<MacroKey, { value: number; mode: MacroMode }>>;
 
 type ThemeMode = "system" | "light" | "dark";
+const DEFAULT_LLM_MODEL = "gpt-4o-mini";
+const LLM_FEATURE_LABELS: Record<LLMFeature, string> = {
+  component_creation: "Component creation",
+  prompt_rolls: "Prompt rolls",
+  recipe_polish: "Recipe polish",
+  weekly_recaps: "Weekly recaps",
+};
+const LLM_PROVIDER_LABELS: Record<LLMProvider, string> = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  google: "Google",
+  ollama: "Ollama",
+  custom: "Custom",
+};
 
 const THEME_KEY = "nutriroll.theme";
 
@@ -60,8 +80,6 @@ export function SettingsPage() {
   const tEquipment = useTranslations("settings.equipment");
   const equipmentVocab = useEquipment();
   const defaultEquipmentVocab = useDefaultEquipment();
-  const meta = useComponentMeta();
-  const isLlmConfigured = meta?.llm_configured ?? false;
 
   const [profile, setProfile] = useState<UserProfileRead | null>(null);
   const [dietaryMode, setDietaryMode] = useState<DietaryMode>("");
@@ -81,7 +99,15 @@ export function SettingsPage() {
   const [equipment, setEquipment] = useState<Set<Equipment>>(() => new Set());
   const [equipmentTouched, setEquipmentTouched] = useState(false);
   const [equipmentSavedAt, setEquipmentSavedAt] = useState<number | null>(null);
-  const [llmWeeklyRecapEnabled, setLlmWeeklyRecapEnabled] = useState(false);
+  const [llmConfig, setLlmConfig] = useState<LLMConfigRead | null>(null);
+  const [llmEnabledFeatures, setLlmEnabledFeatures] = useState<Set<LLMFeature>>(() => new Set());
+  const [llmProvider, setLlmProvider] = useState<LLMProvider>("openai");
+  const [llmModel, setLlmModel] = useState(DEFAULT_LLM_MODEL);
+  const [llmApiKey, setLlmApiKey] = useState("");
+  const [llmApiKeySet, setLlmApiKeySet] = useState(false);
+  const [llmSaving, setLlmSaving] = useState(false);
+  const [llmTesting, setLlmTesting] = useState(false);
+  const [llmError, setLlmError] = useState<string | null>(null);
   const [llmSavedAt, setLlmSavedAt] = useState<number | null>(null);
   const [blacklisted, setBlacklisted] = useState<ComponentRead[]>([]);
   const [blacklistLoading, setBlacklistLoading] = useState<boolean>(true);
@@ -102,9 +128,13 @@ export function SettingsPage() {
     void loadBlacklist();
     let cancelled = false;
     void (async () => {
-      const result = await apiClient.GET("/v1/me/profile");
-      if (cancelled || !result.data) return;
-      const p = result.data;
+      const [profileResult, llmResult] = await Promise.all([
+        apiClient.GET("/v1/me/profile"),
+        apiClient.GET("/v1/me/profile/llm"),
+      ]);
+      if (cancelled || !profileResult.data || !llmResult.data) return;
+      const p = profileResult.data;
+      const llm = llmResult.data;
       setProfile(p);
       setDietaryMode(p.dietary_mode);
       setAllergens(new Set(p.allergens));
@@ -124,7 +154,11 @@ export function SettingsPage() {
       setDefaultTargets(seed);
       // Phase 13. Empty stored equipment = back-compat "all available".
       setEquipment(new Set(p.equipment ?? []));
-      setLlmWeeklyRecapEnabled(p.llm_weekly_recap_enabled ?? false);
+      setLlmConfig(llm);
+      setLlmEnabledFeatures(new Set(llm.enabled_features ?? []));
+      setLlmProvider(llm.provider ?? "openai");
+      setLlmModel(llm.model || DEFAULT_LLM_MODEL);
+      setLlmApiKeySet(llm.api_key_set ?? false);
     })();
     return () => {
       cancelled = true;
@@ -144,21 +178,11 @@ export function SettingsPage() {
         roll_weights: weights,
         default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
         equipment: [...equipment],
-        llm_weekly_recap_enabled: llmWeeklyRecapEnabled,
+        llm_weekly_recap_enabled: llmEnabledFeatures.has("weekly_recaps"),
         ...overrides,
       };
     },
-    [
-      allergens,
-      defaultTargets,
-      dietaryMode,
-      equipment,
-      goal,
-      llmWeeklyRecapEnabled,
-      profile,
-      timeBudget,
-      weights,
-    ],
+    [allergens, defaultTargets, dietaryMode, equipment, goal, llmEnabledFeatures, profile, timeBudget, weights],
   );
 
   const updateWeight = (key: WeightKey, value: number) => {
@@ -291,14 +315,56 @@ export function SettingsPage() {
     setSavedAt(Date.now());
   };
 
-  const saveLlmSettings = async () => {
-    const body = buildProfileBody();
-    if (!body) return;
-    const result = await apiClient.PUT("/v1/me/profile", { body });
-    if (result.data) {
-      setProfile(result.data);
-      setLlmSavedAt(Date.now());
+  const toggleLlmFeature = (feature: LLMFeature) => {
+    setLlmEnabledFeatures((prev) => {
+      const next = new Set(prev);
+      if (next.has(feature)) next.delete(feature);
+      else next.add(feature);
+      return next;
+    });
+  };
+
+  const toggleAllLlmFeatures = () => {
+    setLlmEnabledFeatures((prev) =>
+      prev.size > 0 ? new Set<LLMFeature>() : new Set<LLMFeature>(LLM_FEATURES),
+    );
+  };
+
+  const saveLlmSettings = async (options?: { includeApiKey?: boolean }) => {
+    const includeApiKey = options?.includeApiKey === true;
+    if (!llmConfig) return;
+    if (includeApiKey) setLlmTesting(true);
+    else setLlmSaving(true);
+    setLlmError(null);
+    const body: LLMConfigUpdate = {
+      enabled_features: [...llmEnabledFeatures],
+      provider: llmProvider,
+      model: llmModel.trim() || DEFAULT_LLM_MODEL,
+      ...(includeApiKey ? { api_key: llmApiKey } : {}),
+    };
+    const result = await apiClient.PUT("/v1/me/profile/llm", { body });
+    if (includeApiKey) setLlmTesting(false);
+    else setLlmSaving(false);
+    if (!result.data) {
+      const detail =
+        typeof result.error === "object" &&
+        result.error !== null &&
+        "detail" in result.error &&
+        typeof result.error.detail === "object" &&
+        result.error.detail !== null &&
+        "message" in result.error.detail
+          ? String(result.error.detail.message)
+          : `HTTP ${result.response.status}`;
+      setLlmError(detail);
+      return;
     }
+    setLlmConfig(result.data);
+    setLlmEnabledFeatures(new Set(result.data.enabled_features ?? []));
+    setLlmProvider(result.data.provider ?? "openai");
+    setLlmModel(result.data.model || DEFAULT_LLM_MODEL);
+    setLlmApiKeySet(result.data.api_key_set ?? false);
+    if (includeApiKey) setLlmApiKey("");
+    setLlmSavedAt(Date.now());
   };
 
   const exportData = async () => {
@@ -568,31 +634,117 @@ export function SettingsPage() {
           <CardTitle>{t("llm.title")}</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
-          <p className="text-sm text-[color:var(--color-muted)]">{t("llm.body")}</p>
-          {!isLlmConfigured && (
-            <p className="text-sm text-[color:var(--color-muted)]">{t("llm.notConfigured")}</p>
-          )}
+          <p className="rounded-2xl border border-[color:var(--color-brand)]/20 bg-[color:var(--color-brand-soft)] px-4 py-3 text-sm text-[color:var(--color-brand)]">
+            {t("llm.byokBanner")}
+          </p>
+
           <button
             type="button"
-            aria-pressed={llmWeeklyRecapEnabled}
-            onClick={() => setLlmWeeklyRecapEnabled((current) => !current)}
-            disabled={!isLlmConfigured}
+            aria-pressed={llmEnabledFeatures.size > 0}
+            onClick={toggleAllLlmFeatures}
             className={
-              llmWeeklyRecapEnabled
-                ? "flex items-center justify-between rounded-2xl border-2 border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] p-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
-                : "flex items-center justify-between rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-3 text-left transition hover:border-[color:var(--color-brand)] disabled:cursor-not-allowed disabled:opacity-50"
+              llmEnabledFeatures.size > 0
+                ? "flex items-center justify-between rounded-2xl border-2 border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] p-3 text-left"
+                : "flex items-center justify-between rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-3 text-left transition hover:border-[color:var(--color-brand)]"
             }
           >
-            <div className="grid gap-1">
-              <span className="text-sm font-medium">{t("llm.weeklyRecaps")}</span>
-              <span className="text-xs text-[color:var(--color-muted)]">
-                {t("llm.weeklyRecapsHelp")}
-              </span>
-            </div>
+            <span className="text-sm font-medium">{t("llm.masterToggle")}</span>
             <span className="text-xs font-medium">
-              {llmWeeklyRecapEnabled ? t("llm.on") : t("llm.off")}
+              {llmEnabledFeatures.size > 0 ? t("llm.on") : t("llm.off")}
             </span>
           </button>
+
+          <div className="grid gap-2">
+            {LLM_FEATURES.map((feature) => {
+              const active = llmEnabledFeatures.has(feature);
+              return (
+                <button
+                  key={feature}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggleLlmFeature(feature)}
+                  className={
+                    active
+                      ? "flex items-center justify-between rounded-2xl border-2 border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] p-3 text-left"
+                      : "flex items-center justify-between rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-3 text-left transition hover:border-[color:var(--color-brand)]"
+                  }
+                >
+                  <span className="text-sm font-medium">{LLM_FEATURE_LABELS[feature]}</span>
+                  <span className="text-xs font-medium">{active ? t("llm.on") : t("llm.off")}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            {t("llm.provider")}
+            <Select value={llmProvider} onChange={(e) => setLlmProvider(e.target.value as LLMProvider)}>
+              {LLM_PROVIDERS.map((provider) => (
+                <option key={provider} value={provider}>
+                  {LLM_PROVIDER_LABELS[provider]}
+                </option>
+              ))}
+            </Select>
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            {t("llm.model")}
+            <Input
+              type="text"
+              value={llmModel}
+              onChange={(e) => setLlmModel(e.target.value)}
+              placeholder={DEFAULT_LLM_MODEL}
+            />
+          </label>
+
+          <label className="grid gap-1.5 text-sm font-medium">
+            {t("llm.apiKey")}
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                value={llmApiKey}
+                onChange={(e) => setLlmApiKey(e.target.value)}
+                placeholder={t("llm.apiKeyPlaceholder")}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void saveLlmSettings({ includeApiKey: true })}
+                disabled={llmTesting || llmApiKey.trim() === ""}
+              >
+                {llmTesting ? t("llm.testing") : t("llm.testConnection")}
+              </Button>
+            </div>
+          </label>
+
+          {llmEnabledFeatures.size > 0 && !llmApiKeySet && (
+            <output
+              aria-live="polite"
+              className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger)]/10 p-3 text-sm text-[color:var(--color-danger)]"
+            >
+              {t("llm.apiKeyWarning")}
+            </output>
+          )}
+
+          {llmError && (
+            <output
+              aria-live="polite"
+              className="rounded-xl border border-[color:var(--color-danger)]/30 bg-[color:var(--color-danger)]/10 p-3 text-sm text-[color:var(--color-danger)]"
+            >
+              {llmError}
+            </output>
+          )}
+
+          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-4">
+            <div className="text-sm font-medium">{t("llm.disclosureTitle")}</div>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[color:var(--color-muted)]">
+              <li>{t("llm.disclosure.componentDescriptions")}</li>
+              <li>{t("llm.disclosure.recipeSteps")}</li>
+              <li>{t("llm.disclosure.weeklyMealCounts")}</li>
+              <li>{t("llm.disclosure.noPersonalInfo")}</li>
+            </ul>
+          </div>
+
           <div className="flex items-center justify-between">
             <output aria-live="polite" className="text-xs text-[color:var(--color-muted)]">
               {llmSavedAt ? t("llm.saved") : ""}
@@ -601,9 +753,9 @@ export function SettingsPage() {
               type="button"
               size="sm"
               onClick={() => void saveLlmSettings()}
-              disabled={!profile || !isLlmConfigured}
+              disabled={!llmConfig || llmSaving}
             >
-              {t("llm.save")}
+              {llmSaving ? t("profile.saving") : t("llm.save")}
               <Save aria-hidden size={14} />
             </Button>
           </div>

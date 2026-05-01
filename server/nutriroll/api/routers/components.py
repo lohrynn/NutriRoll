@@ -22,9 +22,11 @@ from nutriroll.db.repositories.components import (
     ComponentNameTakenError,
     ComponentRepository,
 )
+from nutriroll.db.repositories.profile import UserProfileRepository
 from nutriroll.db.session import get_session
 from nutriroll.domain.component import Category, Component
 from nutriroll.domain.llm_component_builder import LLMBuildError, LLMComponentBuilder
+from nutriroll.domain.llm_config import LLMFeatureDisabledError, resolve_runtime_llm_config
 from nutriroll.logging import get_logger
 
 router = APIRouter(prefix="/v1/components", tags=["components"])
@@ -58,8 +60,10 @@ def _problem(
     status_code: int,
     title: str,
     detail: str,
+    code: str | None = None,
 ) -> JSONResponse:
     payload = ProblemDetail(
+        code=code,
         title=title,
         status=status_code,
         detail=detail,
@@ -149,6 +153,7 @@ async def create_component(
 async def generate_component(
     payload: ComponentGenerateRequest,
     request: Request,
+    session: AsyncSession = Depends(get_session),
 ) -> ComponentGenerateResponse | JSONResponse:
     now = datetime.now(UTC)
     device_key = _device_key(request)
@@ -156,19 +161,30 @@ async def generate_component(
         return _problem(
             request=request,
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            code="RATE_LIMIT_EXCEEDED",
             title="Rate limit exceeded",
             detail="Please wait 10 seconds before generating another component.",
         )
 
     profile = payload.profile.to_domain() if payload.profile is not None else None
-    builder = LLMComponentBuilder()
+    stored_llm = await UserProfileRepository(session).get_stored_llm_config()
+    builder = LLMComponentBuilder(runtime_config=resolve_runtime_llm_config(stored_llm))
     log.info("component_generate_requested", model=builder.model)
     try:
         generated = await run_in_threadpool(builder.build_from_prompt, payload.prompt, profile)
+    except LLMFeatureDisabledError:
+        return _problem(
+            request=request,
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="LLM_FEATURE_DISABLED",
+            title="AI feature disabled",
+            detail="Component creation is disabled in AI settings.",
+        )
     except LLMBuildError as exc:
         return _problem(
             request=request,
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            code="LLM_BUILD_FAILED",
             title="Component generation failed",
             detail=str(exc),
         )

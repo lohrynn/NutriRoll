@@ -41,6 +41,7 @@ from nutriroll.domain.roll_prompt_parser import (
     RollConstraints,
     RollPromptParser,
 )
+from nutriroll.domain.llm_config import LLMFeatureDisabledError, resolve_runtime_llm_config
 
 router = APIRouter(prefix="/v1/roll", tags=["roll"])
 
@@ -227,8 +228,10 @@ async def _parse_prompt_constraints(
 ) -> RollConstraints:
     if prompt is None or prompt.strip() == "":
         return RollConstraints()
-    profile = await UserProfileRepository(session).get_or_create()
-    parser = RollPromptParser()
+    profile_repo = UserProfileRepository(session)
+    profile = await profile_repo.get_or_create()
+    stored_llm = await profile_repo.get_stored_llm_config()
+    parser = RollPromptParser(runtime_config=resolve_runtime_llm_config(stored_llm))
     return await run_in_threadpool(parser.parse_prompt, prompt, profile)
 
 
@@ -265,6 +268,14 @@ async def roll_bowl(
             session,
             pool=pool,
             pantry_ids=pantry_ids,
+        )
+    except LLMFeatureDisabledError as exc:
+        return _problem(
+            request=request,
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="LLM_FEATURE_DISABLED",
+            title="AI feature disabled",
+            detail=f"{exc.feature.replace('_', ' ').title()} is disabled in AI settings.",
         )
     except PromptParseError as exc:
         return _problem(
@@ -308,6 +319,14 @@ async def reroll_one_slot(
             session,
             pool=pool,
             pantry_ids=pantry_ids,
+        )
+    except LLMFeatureDisabledError as exc:
+        return _problem(
+            request=request,
+            status_code=status.HTTP_403_FORBIDDEN,
+            code="LLM_FEATURE_DISABLED",
+            title="AI feature disabled",
+            detail=f"{exc.feature.replace('_', ' ').title()} is disabled in AI settings.",
         )
     except PromptParseError as exc:
         return _problem(

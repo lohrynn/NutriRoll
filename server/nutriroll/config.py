@@ -38,6 +38,10 @@ class Settings(BaseSettings):
         default="dev-only-not-for-prod-replace-me",
         description="Master key used to envelope-encrypt per-user LLM API keys.",
     )
+    llm_provider: Literal["openai", "anthropic", "google", "ollama", "custom"] = Field(
+        default="openai",
+        description="Default LLM provider used when the user has not overridden it.",
+    )
     llm_model: str = Field(
         default="gpt-4o-mini",
         validation_alias=AliasChoices("NUTRIOLL_LLM_MODEL", "NUTRIROLL_LLM_MODEL"),
@@ -52,6 +56,51 @@ class Settings(BaseSettings):
         default="",
         validation_alias="OPENAI_API_KEY",
         description="API key used for prompt-based component generation.",
+    )
+    openai_base_url: str = Field(
+        default="https://api.openai.com/v1",
+        validation_alias="OPENAI_BASE_URL",
+        description="OpenAI-compatible base URL for the OpenAI provider.",
+    )
+    anthropic_api_key: str = Field(
+        default="",
+        validation_alias="ANTHROPIC_API_KEY",
+        description="Default Anthropic API key fallback.",
+    )
+    anthropic_base_url: str = Field(
+        default="https://api.anthropic.com/v1",
+        validation_alias="ANTHROPIC_BASE_URL",
+        description="Anthropic API base URL.",
+    )
+    google_api_key: str = Field(
+        default="",
+        validation_alias="GOOGLE_API_KEY",
+        description="Default Google Generative AI API key fallback.",
+    )
+    google_base_url: str = Field(
+        default="https://generativelanguage.googleapis.com/v1beta",
+        validation_alias="GOOGLE_BASE_URL",
+        description="Google Generative AI API base URL.",
+    )
+    ollama_api_key: str = Field(
+        default="",
+        validation_alias="OLLAMA_API_KEY",
+        description="Optional Ollama API key for proxied deployments.",
+    )
+    ollama_base_url: str = Field(
+        default="http://localhost:11434/v1",
+        validation_alias="OLLAMA_BASE_URL",
+        description="Ollama OpenAI-compatible base URL.",
+    )
+    custom_llm_api_key: str = Field(
+        default="",
+        validation_alias="CUSTOM_LLM_API_KEY",
+        description="Default API key for the custom OpenAI-compatible provider.",
+    )
+    custom_llm_base_url: str = Field(
+        default="",
+        validation_alias="CUSTOM_LLM_BASE_URL",
+        description="Base URL for the custom OpenAI-compatible provider.",
     )
 
     @property

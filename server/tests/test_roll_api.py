@@ -286,6 +286,19 @@ async def test_roll_prompt_parse_failure_returns_problem_detail(
 
 
 @pytest.mark.asyncio
+async def test_roll_prompt_feature_disabled_returns_403(client: AsyncClient) -> None:
+    await _seed_pool(client)
+
+    response = await client.post(
+        "/v1/roll",
+        json={"slots": [{"category": "base", "count": 1}], "prompt": "spicy"},
+    )
+
+    assert response.status_code == 403, response.text
+    assert response.json()["code"] == "LLM_FEATURE_DISABLED"
+
+
+@pytest.mark.asyncio
 async def test_reroll_slot_returns_single_slot(client: AsyncClient) -> None:
     await _seed_pool(client)
     list_resp = await client.get("/v1/components", params={"category": "base"})

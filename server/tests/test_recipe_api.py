@@ -190,9 +190,14 @@ async def test_recipe_polish_query_returns_polished_steps(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     base_id = await _create(client, _base_payload())
+    enabled = await client.put(
+        "/v1/me/profile/llm",
+        json={"enabled_features": ["recipe_polish"]},
+    )
+    assert enabled.status_code == 200, enabled.text
 
     class _FakePolisher:
-        def __init__(self) -> None:
+        def __init__(self, *_: object, **__: object) -> None:
             self.last_applied = True
 
         async def polish_steps(
@@ -229,6 +234,11 @@ async def test_recipe_polish_unavailable_returns_raw_steps_200_ok(
     client: AsyncClient,
 ) -> None:
     base_id = await _create(client, _base_payload())
+    enabled = await client.put(
+        "/v1/me/profile/llm",
+        json={"enabled_features": ["recipe_polish"]},
+    )
+    assert enabled.status_code == 200, enabled.text
 
     response = await client.post(
         "/v1/recipe",
@@ -240,3 +250,17 @@ async def test_recipe_polish_unavailable_returns_raw_steps_200_ok(
     body = response.json()
     assert body["polished"] is False
     assert body["blocks"][0]["steps"][0]["text"] == "Boil brown rice (80g per portion) for ~25 min."
+
+
+@pytest.mark.asyncio
+async def test_recipe_polish_feature_disabled_returns_403(client: AsyncClient) -> None:
+    base_id = await _create(client, _base_payload())
+
+    response = await client.post(
+        "/v1/recipe",
+        params={"polish": "concise"},
+        json={"component_ids": [base_id]},
+    )
+
+    assert response.status_code == 403, response.text
+    assert response.json()["detail"]["code"] == "LLM_FEATURE_DISABLED"

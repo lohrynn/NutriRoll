@@ -18,6 +18,7 @@ from nutriroll.api.schemas.history import (
 from nutriroll.db.repositories.history import HistoryRepository
 from nutriroll.db.repositories.profile import UserProfileRepository
 from nutriroll.db.session import get_session
+from nutriroll.domain.llm_config import LLMFeatureDisabledError, resolve_runtime_llm_config
 from nutriroll.domain.history import HistoryEvent, HistoryEventKind
 from nutriroll.domain.weekly_recap import Recap, WeeklyRecapGenerator
 
@@ -114,11 +115,18 @@ async def get_weekly_recap(
             cached=True,
         )
 
-    profile = await UserProfileRepository(session).get_or_create()
-    if not generate or not profile.llm_weekly_recap_enabled:
+    if not generate:
         return HistoryRecapResponse(week_start=week_start, recap=None, cached=False)
 
-    recap = await WeeklyRecapGenerator(session).generate_recap(user_id, week_start)
+    stored_llm = await UserProfileRepository(session).get_stored_llm_config()
+    generator = WeeklyRecapGenerator(session, runtime_config=resolve_runtime_llm_config(stored_llm))
+    try:
+        recap = await generator.generate_recap(user_id, week_start)
+    except LLMFeatureDisabledError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "LLM_FEATURE_DISABLED", "feature": exc.feature},
+        ) from exc
     _store_cached_recap(user_id, week_start, recap)
     return HistoryRecapResponse(
         week_start=week_start,

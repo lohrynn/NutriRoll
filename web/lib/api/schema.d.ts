@@ -145,6 +145,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/profile/llm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get LLM feature settings */
+        get: operations["get_profile_llm_v1_me_profile_llm_get"];
+        /** Update LLM feature settings */
+        put: operations["update_profile_llm_v1_me_profile_llm_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/meta/components": {
         parameters: {
             query?: never;
@@ -778,6 +796,38 @@ export interface components {
              * Format: date
              */
             week_start: string;
+        };
+        /** LLMConfigRead */
+        LLMConfigRead: {
+            /**
+             * Api Key Set
+             * @default false
+             */
+            api_key_set: boolean;
+            /** Enabled Features */
+            enabled_features?: ("component_creation" | "prompt_rolls" | "recipe_polish" | "weekly_recaps")[];
+            /**
+             * Model
+             * @default gpt-4o-mini
+             */
+            model: string;
+            /**
+             * Provider
+             * @default openai
+             * @enum {string}
+             */
+            provider: "openai" | "anthropic" | "google" | "ollama" | "custom";
+        };
+        /** LLMConfigUpdate */
+        LLMConfigUpdate: {
+            /** Api Key */
+            api_key?: string | null;
+            /** Enabled Features */
+            enabled_features?: ("component_creation" | "prompt_rolls" | "recipe_polish" | "weekly_recaps")[] | null;
+            /** Model */
+            model?: string | null;
+            /** Provider */
+            provider?: ("openai" | "anthropic" | "google" | "ollama" | "custom") | null;
         };
         /**
          * MacroTargetSchema
@@ -1814,6 +1864,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_profile_llm_v1_me_profile_llm_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LLMConfigRead"];
+                };
+            };
+        };
+    };
+    update_profile_llm_v1_me_profile_llm_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LLMConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LLMConfigRead"];
                 };
             };
             /** @description Validation Error */

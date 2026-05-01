@@ -55,9 +55,14 @@ def _component_payload(
 
 
 async def _enable_weekly_recaps(client: AsyncClient) -> None:
-    current = (await client.get("/v1/me/profile")).json()
-    current["llm_weekly_recap_enabled"] = True
-    response = await client.put("/v1/me/profile", json=current)
+    response = await client.put(
+        "/v1/me/profile/llm",
+        json={
+            "enabled_features": ["weekly_recaps"],
+            "provider": "openai",
+            "model": "gpt-4o-mini",
+        },
+    )
     assert response.status_code == 200, response.text
 
 
@@ -252,3 +257,16 @@ async def test_weekly_recap_llm_failure_returns_stats_only_fallback(
     assert body["recap"]["suggestions"][0] == (
         "Add a sturdier base or extra protein to keep meals more filling."
     )
+
+
+@pytest.mark.asyncio
+async def test_weekly_recap_feature_disabled_returns_403(client: AsyncClient) -> None:
+    history_router._recap_cache.clear()
+
+    response = await client.get(
+        "/v1/history/recap",
+        params={"week_start": _week_start_for_today().isoformat(), "generate": "true"},
+    )
+
+    assert response.status_code == 403, response.text
+    assert response.json()["detail"]["code"] == "LLM_FEATURE_DISABLED"

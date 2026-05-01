@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
-import { useComponentMeta } from "@/lib/components/meta";
 import type { Category } from "@/lib/components/types";
 import { requestNotificationPermission, useCookTimer } from "@/lib/cook/timers";
 import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
@@ -243,13 +242,13 @@ export function RecipePage() {
   const t = useTranslations("recipe");
   const tCategory = useTranslations("components.category");
   const tMethod = useTranslations("components.method");
-  const meta = useComponentMeta();
   const [pageState, setPageState] = useState<PageState>("loading");
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [bowl, setBowl] = useState<RolledBowl | null>(null);
   const [isRefreshingSteps, setIsRefreshingSteps] = useState(false);
   const [polishMode, setPolishMode] = useState<PolishMode>("off");
+  const [recipePolishEnabled, setRecipePolishEnabled] = useState(false);
 
   const buildRecipe = useCallback(
     async (rolledBowl: RolledBowl, polish: PolishMode, keepRecipeVisible = false) => {
@@ -309,13 +308,25 @@ export function RecipePage() {
     void buildRecipe(storedBowl, "off");
   }, [buildRecipe]);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const result = await apiClient.GET("/v1/me/profile/llm");
+      if (cancelled || !result.data) return;
+      setRecipePolishEnabled((result.data.enabled_features ?? []).includes("recipe_polish"));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const onPolishModeChange = (nextMode: PolishMode) => {
     if (nextMode === polishMode || bowl === null) return;
     setPolishMode(nextMode);
     void buildRecipe(bowl, nextMode, recipe !== null);
   };
 
-  const showPolishToggle = meta?.llm_configured === true && recipe !== null;
+  const showPolishToggle = recipePolishEnabled && recipe !== null;
 
   const renderStepSkeleton = (count: number) => (
     <div aria-hidden className="grid gap-2">

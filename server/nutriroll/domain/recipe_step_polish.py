@@ -13,6 +13,13 @@ from typing import Any, ClassVar, Final, Literal, cast
 import httpx
 
 from nutriroll.config import get_settings
+from nutriroll.domain.llm_config import (
+    KNOWN_FEATURES,
+    LLMConfig,
+    LLMRuntimeConfig,
+    perform_llm_request,
+    resolve_runtime_llm_config,
+)
 from nutriroll.domain.recipe import RecipeStep
 
 PolishTone = Literal["concise", "enthusiastic", "calm", "professional"]
@@ -38,15 +45,40 @@ class RecipeStepPolish:
     def __init__(
         self,
         *,
+        runtime_config: LLMRuntimeConfig | None = None,
         model: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
         timeout_seconds: float = 12.0,
     ) -> None:
         settings = get_settings()
-        self.model = model or settings.llm_model
-        self.api_key = api_key if api_key is not None else settings.openai_api_key
-        self.base_url = (base_url or settings.llm_base_url).rstrip("/")
+        resolved = resolve_runtime_llm_config(settings=settings)
+        enabled_features = (
+            list(KNOWN_FEATURES)
+            if runtime_config is None and any(value is not None for value in (model, api_key, base_url))
+            else list(resolved.public.enabled_features)
+        )
+        self.runtime_config = (
+            runtime_config
+            if runtime_config is not None
+            else LLMRuntimeConfig(
+                public=LLMConfig(
+                    enabled_features=enabled_features,
+                    provider=resolved.public.provider,
+                    model=model or resolved.model,
+                    api_key_set=bool(
+                        (api_key if api_key is not None else resolved.api_key).strip()
+                    ),
+                ),
+                provider=resolved.provider,
+                model=model or resolved.model,
+                api_key=api_key if api_key is not None else resolved.api_key,
+                base_url=(base_url or resolved.base_url).rstrip("/"),
+            )
+        )
+        self.model = self.runtime_config.model
+        self.api_key = self.runtime_config.api_key
+        self.base_url = self.runtime_config.base_url
         self.timeout_seconds = timeout_seconds
         self.last_applied = False
 
@@ -62,6 +94,7 @@ class RecipeStepPolish:
         self.last_applied = False
         if not directions:
             return []
+        self.runtime_config.require_feature("recipe_polish")
         if not self.api_key.strip():
             return list(directions)
 
@@ -126,31 +159,20 @@ class RecipeStepPolish:
         directions: list[RecipeStep],
         tone: PolishTone,
     ) -> list[str] | None:
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        body = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": self._system_prompt(tone)},
-                {"role": "user", "content": self._user_prompt(directions)},
-            ],
-            "temperature": 0.2,
-        }
-
         try:
-            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-                response = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers=headers,
-                    json=body,
-                )
-                response.raise_for_status()
+            response = await perform_llm_request(
+                self.runtime_config,
+                messages=[
+                    {"role": "system", "content": self._system_prompt(tone)},
+                    {"role": "user", "content": self._user_prompt(directions)},
+                ],
+                temperature=0.2,
+                timeout_seconds=self.timeout_seconds,
+            )
         except httpx.HTTPError:
             return None
 
-        payload = response.json()
+        payload = response.raw_payload or {}
         if not isinstance(payload, dict):
             return None
         return self._parse_response(cast(dict[str, Any], payload), expected_count=len(directions))

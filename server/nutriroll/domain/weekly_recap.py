@@ -19,6 +19,13 @@ from nutriroll.db.models.history import HistoryEventRow
 from nutriroll.db.models.rating import RatingRow
 from nutriroll.db.models.store import StoreRow, SupermarketPriceRow
 from nutriroll.db.repositories.profile import UserProfileRepository
+from nutriroll.domain.llm_config import (
+    KNOWN_FEATURES,
+    LLMConfig,
+    LLMRuntimeConfig,
+    perform_llm_request,
+    resolve_runtime_llm_config,
+)
 from nutriroll.domain.profile import UserProfile
 from nutriroll.logging import get_logger
 
@@ -62,6 +69,7 @@ class WeeklyRecapGenerator:
         self,
         session: AsyncSession,
         *,
+        runtime_config: LLMRuntimeConfig | None = None,
         model: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
@@ -69,9 +77,33 @@ class WeeklyRecapGenerator:
     ) -> None:
         settings = get_settings()
         self._session = session
-        self.model = model or settings.llm_model
-        self.api_key = api_key if api_key is not None else settings.openai_api_key
-        self.base_url = (base_url or settings.llm_base_url).rstrip("/")
+        resolved = resolve_runtime_llm_config(settings=settings)
+        enabled_features = (
+            list(KNOWN_FEATURES)
+            if runtime_config is None and any(value is not None for value in (model, api_key, base_url))
+            else list(resolved.public.enabled_features)
+        )
+        self.runtime_config = (
+            runtime_config
+            if runtime_config is not None
+            else LLMRuntimeConfig(
+                public=LLMConfig(
+                    enabled_features=enabled_features,
+                    provider=resolved.public.provider,
+                    model=model or resolved.model,
+                    api_key_set=bool(
+                        (api_key if api_key is not None else resolved.api_key).strip()
+                    ),
+                ),
+                provider=resolved.provider,
+                model=model or resolved.model,
+                api_key=api_key if api_key is not None else resolved.api_key,
+                base_url=(base_url or resolved.base_url).rstrip("/"),
+            )
+        )
+        self.model = self.runtime_config.model
+        self.api_key = self.runtime_config.api_key
+        self.base_url = self.runtime_config.base_url
         self.timeout_seconds = timeout_seconds
 
     async def generate_recap(self, user_id: str, week_start: date) -> Recap:
@@ -82,6 +114,7 @@ class WeeklyRecapGenerator:
         query is not yet user-partitioned.
         """
 
+        self.runtime_config.require_feature("weekly_recaps")
         profile = await UserProfileRepository(self._session).get_or_create()
         week_end = week_start + timedelta(days=7)
         week_events = await self._list_history_events(start=week_start, end=week_end)
@@ -388,55 +421,36 @@ class WeeklyRecapGenerator:
         if not self.api_key.strip():
             raise WeeklyRecapLLMError("LLM features are not configured on this server.")
 
-        payload = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": self._system_prompt(profile.locale)},
-                {
-                    "role": "user",
-                    "content": self._user_prompt(
-                        user_id=user_id,
-                        week_start=week_start,
-                        week_end=week_end,
-                        profile=profile,
-                        stats=stats,
-                        meals=meals,
-                        average_rating=average_rating,
-                    ),
-                },
-            ],
-            "temperature": 0.4,
-            "response_format": {"type": "json_object"},
-        }
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-
         try:
-            async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-                response = await client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers=headers,
-                    json=payload,
-                )
-                response.raise_for_status()
+            llm_response = await perform_llm_request(
+                self.runtime_config,
+                messages=[
+                    {"role": "system", "content": self._system_prompt(profile.locale)},
+                    {
+                        "role": "user",
+                        "content": self._user_prompt(
+                            user_id=user_id,
+                            week_start=week_start,
+                            week_end=week_end,
+                            profile=profile,
+                            stats=stats,
+                            meals=meals,
+                            average_rating=average_rating,
+                        ),
+                    },
+                ],
+                temperature=0.4,
+                timeout_seconds=self.timeout_seconds,
+                response_format_json=True,
+            )
         except httpx.HTTPStatusError as exc:
             raise WeeklyRecapLLMError(self._http_error_message(exc.response)) from exc
         except httpx.HTTPError as exc:
             raise WeeklyRecapLLMError("The AI recap service is unavailable right now.") from exc
 
-        body = response.json()
-        choices = body.get("choices")
-        if not isinstance(choices, list) or not choices:
-            raise WeeklyRecapLLMError("The AI recap service returned an empty response.")
-        first_choice = choices[0]
-        message = first_choice.get("message") if isinstance(first_choice, dict) else None
-        refusal = message.get("refusal") if isinstance(message, dict) else None
-        if refusal:
+        if llm_response.refusal:
             raise WeeklyRecapLLMError("The AI recap service declined this request.")
-        raw_content = message.get("content") if isinstance(message, dict) else None
-        parsed = self._parse_llm_payload(self._coerce_message_content(raw_content))
+        parsed = self._parse_llm_payload(llm_response.text)
         summary_text = str(parsed.get("summary_text", "")).strip()
         suggestions = parsed.get("suggestions", [])
         if not summary_text:

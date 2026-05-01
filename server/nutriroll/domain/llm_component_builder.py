@@ -21,6 +21,13 @@ from nutriroll.domain.component import (
     Portion,
     PortionUnit,
 )
+from nutriroll.domain.llm_config import (
+    KNOWN_FEATURES,
+    LLMConfig,
+    LLMRuntimeConfig,
+    perform_llm_request_sync,
+    resolve_runtime_llm_config,
+)
 from nutriroll.domain.profile import UserProfile
 
 
@@ -47,15 +54,40 @@ class LLMComponentBuilder:
     def __init__(
         self,
         *,
+        runtime_config: LLMRuntimeConfig | None = None,
         model: str | None = None,
         api_key: str | None = None,
         base_url: str | None = None,
         timeout_seconds: float = 30.0,
     ) -> None:
         settings = get_settings()
-        self.model = model or settings.llm_model
-        self.api_key = api_key if api_key is not None else settings.openai_api_key
-        self.base_url = (base_url or settings.llm_base_url).rstrip("/")
+        resolved = resolve_runtime_llm_config(settings=settings)
+        enabled_features = (
+            list(KNOWN_FEATURES)
+            if runtime_config is None and any(value is not None for value in (model, api_key, base_url))
+            else list(resolved.public.enabled_features)
+        )
+        self.runtime_config = (
+            runtime_config
+            if runtime_config is not None
+            else LLMRuntimeConfig(
+                public=LLMConfig(
+                    enabled_features=enabled_features,
+                    provider=resolved.public.provider,
+                    model=model or resolved.model,
+                    api_key_set=bool(
+                        (api_key if api_key is not None else resolved.api_key).strip()
+                    ),
+                ),
+                provider=resolved.provider,
+                model=model or resolved.model,
+                api_key=api_key if api_key is not None else resolved.api_key,
+                base_url=(base_url or resolved.base_url).rstrip("/"),
+            )
+        )
+        self.model = self.runtime_config.model
+        self.api_key = self.runtime_config.api_key
+        self.base_url = self.runtime_config.base_url
         self.timeout_seconds = timeout_seconds
 
     def generate_from_prompt(self, prompt: str, profile: UserProfile | None = None) -> Component:
@@ -67,6 +99,7 @@ class LLMComponentBuilder:
         normalized_prompt = prompt.strip()
         if not normalized_prompt:
             raise LLMBuildError("Enter a short description before generating a component.")
+        self.runtime_config.require_feature("component_creation")
         if not self.api_key.strip():
             raise LLMBuildError("LLM features are not configured on this server.")
 
@@ -94,45 +127,27 @@ class LLMComponentBuilder:
     def _request_component_json(
         self, prompt: str, profile: UserProfile | None
     ) -> _LLMResponse:
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        body = {
-            "model": self.model,
-            "messages": [
-                {"role": "system", "content": self._system_prompt()},
-                {"role": "user", "content": self._user_prompt(prompt, profile)},
-            ],
-            "temperature": 0.2,
-            "response_format": {"type": "json_object"},
-        }
-
         try:
-            with httpx.Client(timeout=self.timeout_seconds) as client:
-                response = client.post(
-                    f"{self.base_url}/chat/completions",
-                    headers=headers,
-                    json=body,
-                )
-                response.raise_for_status()
+            llm_response = perform_llm_request_sync(
+                self.runtime_config,
+                messages=[
+                    {"role": "system", "content": self._system_prompt()},
+                    {"role": "user", "content": self._user_prompt(prompt, profile)},
+                ],
+                temperature=0.2,
+                timeout_seconds=self.timeout_seconds,
+                response_format_json=True,
+            )
         except httpx.HTTPStatusError as exc:
             detail = self._http_error_message(exc.response)
             raise LLMBuildError(detail) from exc
         except httpx.HTTPError as exc:
             raise LLMBuildError("The AI service is unavailable right now. Please try again.") from exc
 
-        data = response.json()
-        choices = data.get("choices")
-        if not isinstance(choices, list) or not choices:
-            raise LLMBuildError("The AI service returned an empty response.")
-        first_choice = choices[0]
-        message = first_choice.get("message") if isinstance(first_choice, dict) else None
-        refusal = message.get("refusal") if isinstance(message, dict) else None
-        if refusal:
+        data = llm_response.raw_payload or {}
+        if llm_response.refusal:
             raise LLMBuildError("The AI could not generate a component from that request.")
-        content = message.get("content") if isinstance(message, dict) else None
-        raw_output = self._coerce_message_content(content)
+        raw_output = llm_response.text
         if raw_output.strip() == "":
             raise LLMBuildError("The AI service returned an empty response.")
         confidence = self._extract_confidence(data, raw_output)
