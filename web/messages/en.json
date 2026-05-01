@@ -394,6 +394,21 @@
     "empty": "Nothing here yet. Your meals will appear after your first roll.",
     "loading": "Loading history…",
     "loadError": "Could not load history: {message}",
+    "recap": {
+      "title": "Weekly recap",
+      "subtitle": "A quick look at this week's bowls.",
+      "cached": "Ready",
+      "disabled": "Enable AI features in Settings to see weekly recaps",
+      "loading": "Loading weekly recap…",
+      "empty": "No weekly recap is cached yet.",
+      "generate": "Generate recap",
+      "error": "Could not load recap: {message}",
+      "chips": {
+        "meals": "{count, plural, one {# meal} other {# meals}}",
+        "spend": "{amount}",
+        "kcal": "{amount} kcal avg"
+      }
+    },
     "kind": {
       "rolled": "Rolled",
       "cooked": "Cooked",
@@ -531,6 +546,17 @@
       "title": "Default nutrition targets",
       "body": "Per-portion targets the Roll page seeds into every roll.",
       "save": "Save targets",
+      "saved": "Saved."
+    },
+    "llm": {
+      "title": "LLM features",
+      "body": "Optional AI features use your saved history and profile to write more personalized copy.",
+      "notConfigured": "LLM features are not configured on this server yet.",
+      "weeklyRecaps": "Weekly recaps",
+      "weeklyRecapsHelp": "Allow AI-generated weekly summaries on the History page.",
+      "on": "On",
+      "off": "Off",
+      "save": "Save AI settings",
       "saved": "Saved."
     },
     "equipment": {

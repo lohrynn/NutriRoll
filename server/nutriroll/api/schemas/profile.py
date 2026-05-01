@@ -31,6 +31,8 @@ class UserProfileRead(BaseModel):
     equipment: list[Equipment]
     """Phase 13. Hardware the user owns (e.g. ``["oven", "stovetop"]``).
     Empty = "all available" (back-compat)."""
+    llm_weekly_recap_enabled: bool = False
+    """Phase 15. Whether AI-generated weekly recap copy is enabled."""
 
     @classmethod
     def from_domain(cls, p: UserProfile) -> UserProfileRead:
@@ -49,6 +51,7 @@ class UserProfileRead(BaseModel):
             roll_weights=dict(p.roll_weights),
             default_macro_targets=targets_dict,
             equipment=list(p.equipment),
+            llm_weekly_recap_enabled=p.llm_weekly_recap_enabled,
         )
 
 
@@ -67,6 +70,8 @@ class UserProfileUpdate(BaseModel):
     """Phase 11. Per-portion macro targets the user wants by default."""
     equipment: list[Equipment] = Field(default_factory=list[Equipment], max_length=32)
     """Phase 13. Hardware the user owns. Validated via the Equipment enum."""
+    llm_weekly_recap_enabled: bool = False
+    """Phase 15. Opt-in for AI-generated weekly recap copy."""
 
     def to_domain(self) -> UserProfile:
         # Validate macro targets via the domain helper to keep the rules in
@@ -91,6 +96,7 @@ class UserProfileUpdate(BaseModel):
             roll_weights=tuple(self.roll_weights.items()),
             default_macro_targets=target_triples,
             equipment=tuple(self.equipment),
+            llm_weekly_recap_enabled=self.llm_weekly_recap_enabled,
         )
 
 

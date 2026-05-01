@@ -388,6 +388,21 @@
     "empty": "Noch nichts hier. Mahlzeiten erscheinen nach deinem ersten Würfeln.",
     "loading": "Verlauf wird geladen…",
     "loadError": "Verlauf konnte nicht geladen werden: {message}",
+    "recap": {
+      "title": "Wochenrückblick",
+      "subtitle": "Ein schneller Blick auf deine Bowls dieser Woche.",
+      "cached": "Bereit",
+      "disabled": "Aktiviere KI-Funktionen in den Einstellungen, um Wochenrückblicke zu sehen",
+      "loading": "Wochenrückblick wird geladen…",
+      "empty": "Noch kein Wochenrückblick im Cache.",
+      "generate": "Rückblick erstellen",
+      "error": "Rückblick konnte nicht geladen werden: {message}",
+      "chips": {
+        "meals": "{count, plural, one {# Mahlzeit} other {# Mahlzeiten}}",
+        "spend": "{amount}",
+        "kcal": "{amount} kcal im Schnitt"
+      }
+    },
     "kind": {
       "rolled": "Gewürfelt",
       "cooked": "Gekocht",
@@ -525,6 +540,17 @@
       "title": "Standard-Nährwert-Ziele",
       "body": "Pro-Portion-Ziele, die die Roll-Seite in jeden Wurf übernimmt.",
       "save": "Ziele speichern",
+      "saved": "Gespeichert."
+    },
+    "llm": {
+      "title": "LLM-Funktionen",
+      "body": "Optionale KI-Funktionen nutzen deinen Verlauf und dein Profil für persönlichere Texte.",
+      "notConfigured": "LLM-Funktionen sind auf diesem Server noch nicht konfiguriert.",
+      "weeklyRecaps": "Wochenrückblicke",
+      "weeklyRecapsHelp": "Erlaube KI-generierte Wochenzusammenfassungen auf der Verlaufsseite.",
+      "on": "An",
+      "off": "Aus",
+      "save": "KI-Einstellungen speichern",
       "saved": "Gespeichert."
     },
     "equipment": {

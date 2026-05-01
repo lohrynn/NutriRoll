@@ -52,6 +52,10 @@ class UserProfile:
     default; Roll behaves exactly as it did before equipment was introduced).
     Stored as a tuple so the frozen dataclass stays hashable."""
 
+    llm_weekly_recap_enabled: bool = False
+    """Phase 15 — opt-in flag for AI-generated weekly recap copy. Stored in the
+    existing profile persistence layer without a schema migration."""
+
     def __post_init__(self) -> None:
         if self.dietary_mode not in ("", "vegan", "vegetarian", "pescatarian"):
             raise ValueError(f"unknown dietary_mode: {self.dietary_mode!r}")

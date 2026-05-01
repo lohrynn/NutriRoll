@@ -43,6 +43,7 @@ export function OnboardingPage() {
         goal: "",
         locale: "en",
         onboarded: true,
+        llm_weekly_recap_enabled: false,
       },
     });
     setSaving(false);

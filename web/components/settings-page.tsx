@@ -9,13 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
-import { useDefaultEquipment, useEquipment } from "@/lib/components/meta";
+import { useComponentMeta, useDefaultEquipment, useEquipment } from "@/lib/components/meta";
 import type { ComponentRead, Equipment } from "@/lib/components/types";
 import {
   COMMON_ALLERGENS,
   DIETARY_MODES,
   type DietaryMode,
   type UserProfileRead,
+  type UserProfileUpdate,
 } from "@/lib/profile/types";
 import {
   DEFAULT_WEIGHTS,
@@ -59,6 +60,8 @@ export function SettingsPage() {
   const tEquipment = useTranslations("settings.equipment");
   const equipmentVocab = useEquipment();
   const defaultEquipmentVocab = useDefaultEquipment();
+  const meta = useComponentMeta();
+  const isLlmConfigured = meta?.llm_configured ?? false;
 
   const [profile, setProfile] = useState<UserProfileRead | null>(null);
   const [dietaryMode, setDietaryMode] = useState<DietaryMode>("");
@@ -78,6 +81,8 @@ export function SettingsPage() {
   const [equipment, setEquipment] = useState<Set<Equipment>>(() => new Set());
   const [equipmentTouched, setEquipmentTouched] = useState(false);
   const [equipmentSavedAt, setEquipmentSavedAt] = useState<number | null>(null);
+  const [llmWeeklyRecapEnabled, setLlmWeeklyRecapEnabled] = useState(false);
+  const [llmSavedAt, setLlmSavedAt] = useState<number | null>(null);
   const [blacklisted, setBlacklisted] = useState<ComponentRead[]>([]);
   const [blacklistLoading, setBlacklistLoading] = useState<boolean>(true);
 
@@ -119,66 +124,17 @@ export function SettingsPage() {
       setDefaultTargets(seed);
       // Phase 13. Empty stored equipment = back-compat "all available".
       setEquipment(new Set(p.equipment ?? []));
+      setLlmWeeklyRecapEnabled(p.llm_weekly_recap_enabled ?? false);
     })();
     return () => {
       cancelled = true;
     };
   }, [loadBlacklist]);
 
-  const updateWeight = (key: WeightKey, value: number) => {
-    const next = { ...weights, [key]: value };
-    setWeights(next);
-    saveWeights(next); // keep localStorage in sync for offline / roll page
-    if (profile) {
-      // Fire-and-forget persist to profile — ignore transient failures.
-      void apiClient.PUT("/v1/me/profile", {
-        body: {
-          dietary_mode: dietaryMode,
-          allergens: [...allergens],
-          default_time_budget_min:
-            timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
-          goal: goal.trim(),
-          locale: profile.locale,
-          onboarded: profile.onboarded || true,
-          roll_weights: next,
-          default_macro_targets: defaultTargets as Record<
-            string,
-            { value: number; mode: MacroMode }
-          >,
-          equipment: [...equipment],
-        },
-      });
-    }
-  };
-
-  const resetWeights = () => {
-    clearWeights();
-    setWeights({ ...DEFAULT_WEIGHTS });
-    if (profile) {
-      void apiClient.PUT("/v1/me/profile", {
-        body: {
-          dietary_mode: dietaryMode,
-          allergens: [...allergens],
-          default_time_budget_min:
-            timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
-          goal: goal.trim(),
-          locale: profile.locale,
-          onboarded: profile.onboarded || true,
-          roll_weights: {},
-          default_macro_targets: defaultTargets as Record<
-            string,
-            { value: number; mode: MacroMode }
-          >,
-          equipment: [...equipment],
-        },
-      });
-    }
-  };
-
-  const saveDefaultTargets = async () => {
-    if (!profile) return;
-    const result = await apiClient.PUT("/v1/me/profile", {
-      body: {
+  const buildProfileBody = useCallback(
+    (overrides: Partial<UserProfileUpdate> = {}): UserProfileUpdate | null => {
+      if (!profile) return null;
+      return {
         dietary_mode: dietaryMode,
         allergens: [...allergens],
         default_time_budget_min: timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
@@ -188,8 +144,49 @@ export function SettingsPage() {
         roll_weights: weights,
         default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
         equipment: [...equipment],
-      },
-    });
+        llm_weekly_recap_enabled: llmWeeklyRecapEnabled,
+        ...overrides,
+      };
+    },
+    [
+      allergens,
+      defaultTargets,
+      dietaryMode,
+      equipment,
+      goal,
+      llmWeeklyRecapEnabled,
+      profile,
+      timeBudget,
+      weights,
+    ],
+  );
+
+  const updateWeight = (key: WeightKey, value: number) => {
+    const next = { ...weights, [key]: value };
+    setWeights(next);
+    saveWeights(next); // keep localStorage in sync for offline / roll page
+    if (profile) {
+      const body = buildProfileBody({ roll_weights: next });
+      if (!body) return;
+      // Fire-and-forget persist to profile — ignore transient failures.
+      void apiClient.PUT("/v1/me/profile", { body });
+    }
+  };
+
+  const resetWeights = () => {
+    clearWeights();
+    setWeights({ ...DEFAULT_WEIGHTS });
+    if (profile) {
+      const body = buildProfileBody({ roll_weights: {} });
+      if (!body) return;
+      void apiClient.PUT("/v1/me/profile", { body });
+    }
+  };
+
+  const saveDefaultTargets = async () => {
+    const body = buildProfileBody();
+    if (!body) return;
+    const result = await apiClient.PUT("/v1/me/profile", { body });
     if (result.data) {
       setProfile(result.data);
       setTargetsSavedAt(Date.now());
@@ -259,20 +256,9 @@ export function SettingsPage() {
   }, [profile, equipmentTouched, defaultEquipmentVocab]);
 
   const saveEquipment = async () => {
-    if (!profile) return;
-    const result = await apiClient.PUT("/v1/me/profile", {
-      body: {
-        dietary_mode: dietaryMode,
-        allergens: [...allergens],
-        default_time_budget_min: timeBudget.trim() === "" ? null : Number.parseInt(timeBudget, 10),
-        goal: goal.trim(),
-        locale: profile.locale,
-        onboarded: profile.onboarded || true,
-        roll_weights: weights,
-        default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
-        equipment: [...equipment],
-      },
-    });
+    const body = buildProfileBody();
+    if (!body) return;
+    const result = await apiClient.PUT("/v1/me/profile", { body });
     if (result.data) {
       setProfile(result.data);
       setEquipmentSavedAt(Date.now());
@@ -290,19 +276,12 @@ export function SettingsPage() {
       setSaving(false);
       return;
     }
-    const result = await apiClient.PUT("/v1/me/profile", {
-      body: {
-        dietary_mode: dietaryMode,
-        allergens: [...allergens],
-        default_time_budget_min: tbNum,
-        goal: goal.trim(),
-        locale: profile.locale,
-        onboarded: profile.onboarded || true,
-        roll_weights: weights,
-        default_macro_targets: defaultTargets as Record<string, { value: number; mode: MacroMode }>,
-        equipment: [...equipment],
-      },
-    });
+    const body = buildProfileBody({ default_time_budget_min: tbNum });
+    if (!body) {
+      setSaving(false);
+      return;
+    }
+    const result = await apiClient.PUT("/v1/me/profile", { body });
     setSaving(false);
     if (!result.data) {
       setError(`HTTP ${result.response.status}`);
@@ -310,6 +289,16 @@ export function SettingsPage() {
     }
     setProfile(result.data);
     setSavedAt(Date.now());
+  };
+
+  const saveLlmSettings = async () => {
+    const body = buildProfileBody();
+    if (!body) return;
+    const result = await apiClient.PUT("/v1/me/profile", { body });
+    if (result.data) {
+      setProfile(result.data);
+      setLlmSavedAt(Date.now());
+    }
   };
 
   const exportData = async () => {
@@ -568,6 +557,53 @@ export function SettingsPage() {
             </output>
             <Button type="button" size="sm" onClick={() => void saveDefaultTargets()}>
               {t("defaultNutritionTargets.save")}
+              <Save aria-hidden size={14} />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("llm.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3">
+          <p className="text-sm text-[color:var(--color-muted)]">{t("llm.body")}</p>
+          {!isLlmConfigured && (
+            <p className="text-sm text-[color:var(--color-muted)]">{t("llm.notConfigured")}</p>
+          )}
+          <button
+            type="button"
+            aria-pressed={llmWeeklyRecapEnabled}
+            onClick={() => setLlmWeeklyRecapEnabled((current) => !current)}
+            disabled={!isLlmConfigured}
+            className={
+              llmWeeklyRecapEnabled
+                ? "flex items-center justify-between rounded-2xl border-2 border-[color:var(--color-brand)] bg-[color:var(--color-brand-soft)] p-3 text-left disabled:cursor-not-allowed disabled:opacity-50"
+                : "flex items-center justify-between rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] p-3 text-left transition hover:border-[color:var(--color-brand)] disabled:cursor-not-allowed disabled:opacity-50"
+            }
+          >
+            <div className="grid gap-1">
+              <span className="text-sm font-medium">{t("llm.weeklyRecaps")}</span>
+              <span className="text-xs text-[color:var(--color-muted)]">
+                {t("llm.weeklyRecapsHelp")}
+              </span>
+            </div>
+            <span className="text-xs font-medium">
+              {llmWeeklyRecapEnabled ? t("llm.on") : t("llm.off")}
+            </span>
+          </button>
+          <div className="flex items-center justify-between">
+            <output aria-live="polite" className="text-xs text-[color:var(--color-muted)]">
+              {llmSavedAt ? t("llm.saved") : ""}
+            </output>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void saveLlmSettings()}
+              disabled={!profile || !isLlmConfigured}
+            >
+              {t("llm.save")}
               <Save aria-hidden size={14} />
             </Button>
           </div>

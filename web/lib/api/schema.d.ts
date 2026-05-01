@@ -93,6 +93,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/history/recap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a weekly recap */
+        get: operations["get_weekly_recap_v1_history_recap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/history/{event_id}": {
         parameters: {
             query?: never;
@@ -254,9 +271,7 @@ export interface paths {
     };
     "/v1/recipe": {
         parameters: {
-            query?: {
-                polish?: "concise" | "enthusiastic" | "calm" | "professional";
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -750,6 +765,20 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** HistoryRecapResponse */
+        HistoryRecapResponse: {
+            /**
+             * Cached
+             * @default false
+             */
+            cached: boolean;
+            recap: components["schemas"]["RecapSchema"] | null;
+            /**
+             * Week Start
+             * Format: date
+             */
+            week_start: string;
+        };
         /**
          * MacroTargetSchema
          * @description A single per-portion macro target (Phase 11).
@@ -1038,6 +1067,29 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** RecapSchema */
+        RecapSchema: {
+            stats: components["schemas"]["RecapStatsSchema"];
+            /** Suggestions */
+            suggestions: string[];
+            /** Summary Text */
+            summary_text: string;
+        };
+        /** RecapStatsSchema */
+        RecapStatsSchema: {
+            /** Avg Kcal */
+            avg_kcal: number | null;
+            /** Longest Streak */
+            longest_streak: number;
+            /** Meals Cooked */
+            meals_cooked: number;
+            /** New Foods Tried */
+            new_foods_tried: number;
+            /** Spent Eur */
+            spent_eur: number;
+            /** Top Components */
+            top_components: string[];
+        };
         /** RecipeBlockSchema */
         RecipeBlockSchema: {
             /** Can Cook With Others */
@@ -1275,6 +1327,11 @@ export interface components {
             equipment: components["schemas"]["Equipment"][];
             /** Goal */
             goal: string;
+            /**
+             * Llm Weekly Recap Enabled
+             * @default false
+             */
+            llm_weekly_recap_enabled: boolean;
             /** Locale */
             locale: string;
             /** Onboarded */
@@ -1307,6 +1364,11 @@ export interface components {
              * @default
              */
             goal: string;
+            /**
+             * Llm Weekly Recap Enabled
+             * @default false
+             */
+            llm_weekly_recap_enabled: boolean;
             /**
              * Locale
              * @default en
@@ -1638,6 +1700,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoryEventRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_weekly_recap_v1_history_recap_get: {
+        parameters: {
+            query: {
+                week_start: string;
+                generate?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryRecapResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2097,7 +2191,7 @@ export interface operations {
     build_recipe_endpoint_v1_recipe_post: {
         parameters: {
             query?: {
-                polish?: "concise" | "enthusiastic" | "calm" | "professional";
+                polish?: ("concise" | "enthusiastic" | "calm" | "professional") | null;
             };
             header?: never;
             path?: never;
