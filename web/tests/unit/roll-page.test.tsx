@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "@/messages/en.json";
 
 const postMock = vi.fn();
+const pushMock = vi.fn();
 
 vi.mock("@/lib/api/client", () => ({
   apiClient: {
@@ -39,7 +40,7 @@ vi.mock("@/lib/api/client", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: pushMock }),
 }));
 
 import { RollPage } from "@/components/roll-page";
@@ -82,6 +83,8 @@ const SAMPLE_BOWL = {
 
 beforeEach(() => {
   postMock.mockReset();
+  pushMock.mockReset();
+  window.sessionStorage.clear();
 });
 
 afterEach(() => {
@@ -225,5 +228,31 @@ describe("RollPage", () => {
         }),
       }),
     );
+  });
+
+  it("shows portions and persists the rolled meal before cooking", async () => {
+    postMock.mockResolvedValueOnce({
+      data: SAMPLE_BOWL,
+      error: undefined,
+      response: { status: 200 },
+    });
+
+    render(wrap(<RollPage />));
+
+    fireEvent.change(screen.getByLabelText(enMessages.roll.portions), {
+      target: { value: "4" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: enMessages.roll.rollButton }));
+
+    expect(await screen.findByText("Brown rice")).toBeInTheDocument();
+    expect(screen.getByText("4 portions")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: enMessages.roll.cookThisMeal }));
+
+    expect(pushMock).toHaveBeenCalledWith("/cook");
+    expect(JSON.parse(window.sessionStorage.getItem("nutriroll.rolledBowl") ?? "")).toEqual({
+      bowl: SAMPLE_BOWL,
+      portions: 4,
+    });
   });
 });

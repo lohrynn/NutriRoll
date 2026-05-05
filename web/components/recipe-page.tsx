@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import type { Category } from "@/lib/components/types";
 import { requestNotificationPermission, useCookTimer } from "@/lib/cook/timers";
-import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
+import { readRolledMealFromStorage } from "@/lib/recipe/storage";
 import type { Recipe } from "@/lib/recipe/types";
 import type { RolledBowl } from "@/lib/roll/types";
 
@@ -26,14 +26,7 @@ const CATEGORY_ICON: Record<Category, typeof Salad> = {
 };
 
 function readBowlFromStorage(): RolledBowl | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.sessionStorage.getItem(ROLLED_BOWL_STORAGE_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as RolledBowl;
-  } catch {
-    return null;
-  }
+  return readRolledMealFromStorage()?.bowl ?? null;
 }
 
 function formatMmSs(totalSeconds: number): string {
@@ -252,6 +245,14 @@ export function RecipePage() {
 
   const buildRecipe = useCallback(
     async (rolledBowl: RolledBowl, polish: PolishMode, keepRecipeVisible = false) => {
+      const componentIds = rolledBowl.slots
+        .map((slot) => slot.component.id)
+        .filter((id) => typeof id === "string" && id.length > 0);
+      if (componentIds.length === 0) {
+        setErrorMessage(null);
+        setPageState("missing");
+        return;
+      }
       if (keepRecipeVisible) {
         setIsRefreshingSteps(true);
       } else {
@@ -263,14 +264,14 @@ export function RecipePage() {
         polish === "off"
           ? {
               body: {
-                component_ids: rolledBowl.slots.map((s) => s.component.id),
+                component_ids: componentIds,
                 forced_methods: {},
               },
             }
           : {
               params: { query: { polish } },
               body: {
-                component_ids: rolledBowl.slots.map((s) => s.component.id),
+                component_ids: componentIds,
                 forced_methods: {},
               },
             };
@@ -300,7 +301,7 @@ export function RecipePage() {
 
   useEffect(() => {
     const storedBowl = readBowlFromStorage();
-    if (!storedBowl) {
+    if (!storedBowl || storedBowl.slots.length === 0) {
       setPageState("missing");
       return;
     }

@@ -16,8 +16,10 @@ import {
   type PlannedMealRead,
   type PlannedStatus,
 } from "@/lib/planning/types";
-import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
-import type { RolledBowl } from "@/lib/roll/types";
+import {
+  parseStoredRolledMeal,
+  writeRolledMealToStorage,
+} from "@/lib/recipe/storage";
 
 type Status =
   | { kind: "loading" }
@@ -90,11 +92,9 @@ export function PlanPage() {
   }, [load]);
 
   const cook = (meal: PlannedMealRead) => {
-    const snap = meal.bowl_snapshot as unknown as RolledBowl | null;
-    if (!snap || !Array.isArray(snap.slots)) return;
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(snap));
-    }
+    const storedMeal = parseStoredRolledMeal(meal.bowl_snapshot);
+    if (!storedMeal || storedMeal.bowl.slots.length === 0) return;
+    writeRolledMealToStorage(storedMeal);
     router.push("/recipe");
   };
 
@@ -203,9 +203,9 @@ export function PlanPage() {
                   <p className="text-xs text-[color:var(--color-muted)]">{t("empty")}</p>
                 )}
                 {dayItems.map((meal) => {
-                  const snap = meal.bowl_snapshot as unknown as RolledBowl | null;
+                  const storedMeal = parseStoredRolledMeal(meal.bowl_snapshot);
                   const preview =
-                    snap?.slots
+                    storedMeal?.bowl.slots
                       ?.slice(0, 2)
                       .map((s) => s.component.name)
                       .join(" + ") ?? "";
@@ -245,7 +245,7 @@ export function PlanPage() {
                             type="button"
                             size="sm"
                             onClick={() => cook(meal)}
-                            disabled={!snap?.slots?.length}
+                            disabled={!storedMeal?.bowl.slots.length}
                           >
                             <ChefHat aria-hidden size={14} />
                             {t("cook")}

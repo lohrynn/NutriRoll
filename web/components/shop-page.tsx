@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiClient } from "@/lib/api/client";
-import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
+import { readRolledMealFromStorage } from "@/lib/recipe/storage";
 import type { RolledBowl } from "@/lib/roll/types";
 import type { ShoppingListRead } from "@/lib/shopping/types";
 import type { StoreRead } from "@/lib/stores/types";
@@ -33,11 +33,10 @@ export function ShopPage() {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
 
   useEffect(() => {
-    try {
-      const raw = window.sessionStorage.getItem(ROLLED_BOWL_STORAGE_KEY);
-      if (raw) setBowl(JSON.parse(raw) as RolledBowl);
-    } catch {
-      // ignore
+    const storedMeal = readRolledMealFromStorage();
+    if (storedMeal) {
+      setBowl(storedMeal.bowl);
+      setPortions(storedMeal.portions);
     }
   }, []);
 

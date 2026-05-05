@@ -46,8 +46,8 @@
         "description": "Save supermarkets, pack sizes and prices."
       },
       "cook": {
-        "title": "Rate a meal",
-        "description": "Tell us how it went so the next bowl is better."
+        "title": "Cook your bowl",
+        "description": "Open the step-by-step cooking view for your latest roll."
       },
       "history": {
         "title": "History",
@@ -90,12 +90,14 @@
     "results": "Your bowl",
     "rerollSlot": "Reroll",
     "cookNow": "Cook now",
+    "cookThisMeal": "Cook this meal",
     "saveBowl": "Save",
     "planToday": "Plan today",
     "planSlot": "Meal slot",
     "forceBaseMethod": "Force base method",
     "forceBaseMethodAny": "Any method",
     "portions": "Portions (meal-prep)",
+    "resultPortions": "{count, plural, one {# portion} other {# portions}}",
     "savePrompt": "Name this saved meal:",
     "error": "Couldn't roll a bowl: {message}",
     "dietary": {
@@ -374,9 +376,10 @@
     "error": "Couldn't build list: {message}"
   },
   "cook": {
-    "title": "Rate a meal",
-    "subtitle": "Quick rating after every cook so the next roll fits you better.",
-    "noBowl": "No recent bowl found. Roll one first.",
+    "title": "Cook",
+    "subtitle": "Step-by-step cooking for your most recent rolled meal.",
+    "loading": "Loading your cooking steps…",
+    "noBowl": "No recent rolled meal found. Roll one first.",
     "goToRoll": "Go to Roll",
     "comment": "Notes (optional)",
     "commentPlaceholder": "What worked? What didn't?",

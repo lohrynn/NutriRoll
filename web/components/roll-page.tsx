@@ -23,7 +23,10 @@ import { apiClient } from "@/lib/api/client";
 import { useAllowedMethods } from "@/lib/components/meta";
 import type { Category, CookingMethod, Equipment } from "@/lib/components/types";
 import { MEAL_SLOTS, type MealSlot } from "@/lib/planning/types";
-import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
+import {
+  readRolledMealFromStorage,
+  writeRolledMealToStorage,
+} from "@/lib/recipe/storage";
 import { DEFAULT_SLOTS, type RolledBowl, type RolledSlot } from "@/lib/roll/types";
 import { loadWeightsForRoll } from "@/lib/settings/weights";
 
@@ -142,24 +145,28 @@ export function RollPage() {
   const [saveOpen, setSaveOpen] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [planSlot, setPlanSlot] = useState<MealSlot>("dinner");
+  const [rolledPortions, setRolledPortions] = useState<number | null>(null);
   const baseMethods = useAllowedMethods("base");
 
   // Restore last rolled bowl from sessionStorage after hydration (back-navigation support).
   useEffect(() => {
-    try {
-      const raw = window.sessionStorage.getItem(ROLLED_BOWL_STORAGE_KEY);
-      if (raw) setStatus({ kind: "ok", bowl: JSON.parse(raw) as RolledBowl });
-    } catch {
-      // ignore corrupt data
+    const storedMeal = readRolledMealFromStorage();
+    if (storedMeal) {
+      setStatus({ kind: "ok", bowl: storedMeal.bowl });
+      setRolledPortions(storedMeal.portions);
+      setControls((current) => ({ ...current, portions: storedMeal.portions }));
     }
   }, []);
 
   // Persist bowl to sessionStorage whenever it changes so back-navigation restores it.
   useEffect(() => {
     if (status.kind === "ok") {
-      window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(status.bowl));
+      writeRolledMealToStorage({
+        bowl: status.bowl,
+        portions: rolledPortions ?? controls.portions,
+      });
     }
-  }, [status]);
+  }, [controls.portions, rolledPortions, status]);
 
   // Prefill dietary preferences + allergens from the user profile, but only
   // on first mount and only if the user hasn't typed anything yet.
@@ -266,6 +273,7 @@ export function RollPage() {
       }
       setActivePrompt(prompt);
       setStatus({ kind: "ok", bowl: data });
+      setRolledPortions(controls.portions);
       setPendingAction(null);
       void apiClient.POST("/v1/history", {
         body: {
@@ -327,7 +335,10 @@ export function RollPage() {
 
   const goCook = useCallback(() => {
     if (status.kind !== "ok") return;
-    // sessionStorage is already up-to-date via the status useEffect
+    writeRolledMealToStorage({
+      bowl: status.bowl,
+      portions: rolledPortions ?? controls.portions,
+    });
     void apiClient.POST("/v1/history", {
       body: {
         kind: "cooked",
@@ -341,8 +352,8 @@ export function RollPage() {
         },
       },
     });
-    router.push("/recipe");
-  }, [router, status]);
+    router.push("/cook");
+  }, [controls.portions, rolledPortions, router, status]);
 
   const saveBowl = useCallback(() => {
     if (status.kind !== "ok") return;
@@ -362,12 +373,15 @@ export function RollPage() {
     await apiClient.POST("/v1/saved", {
       body: {
         name,
-        bowl_snapshot: status.bowl as unknown as Record<string, unknown>,
+        bowl_snapshot: {
+          bowl: status.bowl,
+          portions: rolledPortions ?? controls.portions,
+        } as unknown as Record<string, unknown>,
         notes: "",
       },
     });
     setSaveOpen(false);
-  }, [status, saveName]);
+  }, [controls.portions, rolledPortions, saveName, status]);
 
   const planBowl = useCallback(async () => {
     if (status.kind !== "ok") return;
@@ -377,14 +391,17 @@ export function RollPage() {
       body: {
         planned_for: iso,
         slot: planSlot,
-        bowl_snapshot: status.bowl as unknown as Record<string, unknown>,
+        bowl_snapshot: {
+          bowl: status.bowl,
+          portions: rolledPortions ?? controls.portions,
+        } as unknown as Record<string, unknown>,
         status: "planned",
         notes: "",
-        portions_total: controls.portions,
+        portions_total: rolledPortions ?? controls.portions,
       },
     });
     router.push("/plan");
-  }, [router, status, planSlot, controls.portions]);
+  }, [controls.portions, planSlot, rolledPortions, router, status]);
 
   return (
     <div className="grid gap-4">
@@ -755,17 +772,18 @@ export function RollPage() {
                   {t("planToday")}
                 </Button>
               </div>
-              <Button type="button" size="sm" onClick={goCook}>
-                <ChefHat aria-hidden size={14} strokeWidth={2.4} />
-                {t("cookNow")}
-              </Button>
             </div>
           </div>
           <Card>
-            <CardContent className="grid gap-2">
-              <p className="text-xs uppercase tracking-wide text-[color:var(--color-muted)]">
-                {tNutrition("title")}
-              </p>
+            <CardContent className="grid gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs uppercase tracking-wide text-[color:var(--color-muted)]">
+                  {tNutrition("title")}
+                </p>
+                <Badge variant="neutral" className="tabular-nums">
+                  {t("resultPortions", { count: rolledPortions ?? controls.portions })}
+                </Badge>
+              </div>
               {(() => {
                 const totals = status.bowl.slots.reduce(
                   (acc, s) => {
@@ -882,6 +900,10 @@ export function RollPage() {
               );
             })}
           </ul>
+          <Button type="button" size="lg" onClick={goCook} className="w-full">
+            <ChefHat aria-hidden size={18} strokeWidth={2.4} />
+            {t("cookThisMeal")}
+          </Button>
         </section>
       )}
     </div>

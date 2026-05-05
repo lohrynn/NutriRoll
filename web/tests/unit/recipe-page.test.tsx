@@ -6,16 +6,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "@/messages/en.json";
 
 const postMock = vi.fn();
-const useComponentMetaMock = vi.fn<() => { llm_configured: boolean } | null>(() => null);
+const getMock = vi.fn();
 
 vi.mock("@/lib/api/client", () => ({
   apiClient: {
+    GET: (...args: unknown[]) => getMock(...args),
     POST: (...args: unknown[]) => postMock(...args),
   },
-}));
-
-vi.mock("@/lib/components/meta", () => ({
-  useComponentMeta: () => useComponentMetaMock(),
 }));
 
 vi.mock("next/link", () => ({
@@ -76,8 +73,8 @@ const SAMPLE_RECIPE = {
 
 beforeEach(() => {
   postMock.mockReset();
-  useComponentMetaMock.mockReset();
-  useComponentMetaMock.mockReturnValue(null);
+  getMock.mockReset();
+  getMock.mockResolvedValue({ data: undefined, error: undefined, response: { status: 200 } });
   window.sessionStorage.clear();
 });
 
@@ -95,7 +92,10 @@ describe("RecipePage", () => {
   });
 
   it("builds a recipe from the stashed bowl and renders blocks", async () => {
-    window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(SAMPLE_BOWL));
+    window.sessionStorage.setItem(
+      ROLLED_BOWL_STORAGE_KEY,
+      JSON.stringify({ bowl: SAMPLE_BOWL, portions: 3 }),
+    );
     postMock.mockResolvedValueOnce({
       data: SAMPLE_RECIPE,
       error: undefined,
@@ -117,7 +117,11 @@ describe("RecipePage", () => {
   });
 
   it("shows the polish toggle when LLM features are available and refetches with the tone", async () => {
-    useComponentMetaMock.mockReturnValue({ llm_configured: true });
+    getMock.mockResolvedValue({
+      data: { enabled_features: ["recipe_polish"] },
+      error: undefined,
+      response: { status: 200 },
+    });
     window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(SAMPLE_BOWL));
     postMock
       .mockResolvedValueOnce({

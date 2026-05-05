@@ -46,8 +46,8 @@
         "description": "Speichere Supermärkte, Packungsgrößen, Preise."
       },
       "cook": {
-        "title": "Mahlzeit bewerten",
-        "description": "Sag uns, wie es war — die nächste Bowl wird besser."
+        "title": "Bowl kochen",
+        "description": "Öffne die Schritt-für-Schritt-Kochansicht für deine letzte Bowl."
       },
       "history": {
         "title": "Verlauf",
@@ -84,12 +84,14 @@
     "results": "Deine Schüssel",
     "rerollSlot": "Neu würfeln",
     "cookNow": "Jetzt kochen",
+    "cookThisMeal": "Diese Mahlzeit kochen",
     "saveBowl": "Speichern",
     "planToday": "Heute planen",
     "planSlot": "Mahlzeit",
     "forceBaseMethod": "Zubereitungsmethode erzwingen",
     "forceBaseMethodAny": "Beliebig",
     "portions": "Portionen (Meal-Prep)",
+    "resultPortions": "{count, plural, one {# Portion} other {# Portionen}}",
     "savePrompt": "Wie soll diese Bowl heißen?",
     "error": "Konnte keine Schüssel würfeln: {message}",
     "dietary": {
@@ -368,9 +370,10 @@
     "error": "Liste konnte nicht erstellt werden: {message}"
   },
   "cook": {
-    "title": "Mahlzeit bewerten",
-    "subtitle": "Schnelle Bewertung nach jedem Kochen — die nächste Bowl passt besser zu dir.",
-    "noBowl": "Keine kürzlich gewürfelte Bowl gefunden. Würfle zuerst eine.",
+    "title": "Kochen",
+    "subtitle": "Schritt-für-Schritt-Kochen für deine zuletzt gewürfelte Mahlzeit.",
+    "loading": "Kochschritte werden geladen…",
+    "noBowl": "Keine kürzlich gewürfelte Mahlzeit gefunden. Würfle zuerst eine.",
     "goToRoll": "Zum Würfeln",
     "comment": "Notizen (optional)",
     "commentPlaceholder": "Was hat funktioniert? Was nicht?",

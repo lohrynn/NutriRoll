@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiClient } from "@/lib/api/client";
 import type { SavedMealRead } from "@/lib/planning/types";
-import { ROLLED_BOWL_STORAGE_KEY } from "@/lib/recipe/storage";
-import type { RolledBowl } from "@/lib/roll/types";
+import {
+  parseStoredRolledMeal,
+  writeRolledMealToStorage,
+} from "@/lib/recipe/storage";
 
 type Status =
   | { kind: "loading" }
@@ -38,11 +40,9 @@ export function SavedPage() {
   }, [load]);
 
   const cookSaved = (meal: SavedMealRead) => {
-    const snapshot = meal.bowl_snapshot as unknown as RolledBowl | null;
-    if (!snapshot || !Array.isArray(snapshot.slots)) return;
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(ROLLED_BOWL_STORAGE_KEY, JSON.stringify(snapshot));
-    }
+    const storedMeal = parseStoredRolledMeal(meal.bowl_snapshot);
+    if (!storedMeal || storedMeal.bowl.slots.length === 0) return;
+    writeRolledMealToStorage(storedMeal);
     router.push("/recipe");
   };
 
@@ -80,10 +80,10 @@ export function SavedPage() {
       )}
       {status.kind === "ok" &&
         status.items.map((meal) => {
-          const snap = meal.bowl_snapshot as unknown as RolledBowl | null;
-          const slotCount = snap?.slots?.length ?? 0;
+          const storedMeal = parseStoredRolledMeal(meal.bowl_snapshot);
+          const slotCount = storedMeal?.bowl.slots.length ?? 0;
           const previewNames =
-            snap?.slots
+            storedMeal?.bowl.slots
               ?.slice(0, 3)
               .map((s) => s.component.name)
               .join(" + ") ?? "";
