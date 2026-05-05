@@ -3,15 +3,52 @@
 import { ChefHat } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Component, type ReactNode, useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import { RecipePage } from "@/components/recipe-page";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { readRolledMealFromStorage } from "@/lib/recipe/storage";
 
 type PageState = "loading" | "missing" | "ready";
+
+interface CookEBState {
+  hasError: boolean;
+}
+
+class CookErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  CookEBState
+> {
+  constructor(props: { children: ReactNode; fallback: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_error: unknown): CookEBState {
+    return { hasError: true };
+  }
+
+  override render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+function CookErrorFallback() {
+  const t = useTranslations("cook");
+  return (
+    <Card>
+      <CardContent className="grid gap-3 animate-fade-in-up">
+        <p className="text-sm font-medium">{t("errorFallback.title")}</p>
+        <Button type="button" size="sm" onClick={() => window.location.reload()}>
+          {t("errorFallback.retry")}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
 
 export function CookPage() {
   const t = useTranslations("cook");
@@ -57,8 +94,10 @@ export function CookPage() {
   }
 
   return (
-    <div className="animate-fade-in-up">
-      <RecipePage />
-    </div>
+    <CookErrorBoundary fallback={<CookErrorFallback />}>
+      <div className="animate-fade-in-up">
+        <RecipePage />
+      </div>
+    </CookErrorBoundary>
   );
 }

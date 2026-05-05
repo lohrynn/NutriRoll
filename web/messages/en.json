@@ -389,7 +389,11 @@
     "submitting": "Saving…",
     "saved": "Saved. Thanks!",
     "saveFailed": "Couldn't save rating: {message}",
-    "blacklist": "Blacklist this component"
+    "blacklist": "Blacklist this component",
+    "errorFallback": {
+      "title": "Something went wrong",
+      "retry": "Try again"
+    }
   },
   "history": {
     "title": "History",

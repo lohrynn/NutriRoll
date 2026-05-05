@@ -425,7 +425,11 @@ export function RollPage() {
       </Card>
       <ul className="grid gap-3">
         {DEFAULT_SLOTS.map((slotName, idx) => (
-          <li key={`rolling-slot-${idx}-${String(slotName)}`}>
+          <li
+            key={`rolling-slot-${idx}-${String(slotName)}`}
+            className="animate-fade-in-up"
+            style={{ animationDelay: `${(idx + 1) * 80}ms` }}
+          >
             <Card>
               <CardContent className="grid gap-3 p-4">
                 <div className="flex items-start justify-between gap-3">
@@ -782,7 +786,7 @@ export function RollPage() {
       )}
 
       {status.kind === "ok" && (
-        <section aria-label={t("results")} className="grid gap-3 animate-fade-in-up">
+        <section aria-label={t("results")} className="grid gap-3 animate-fade-in-up transition-all duration-300 ease-out">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold tracking-tight">{t("results")}</h2>
             <div className="flex flex-wrap gap-2">
@@ -981,7 +985,7 @@ export function RollPage() {
               );
             })}
           </ul>
-          <Button type="button" size="lg" onClick={goCook} className="w-full">
+          <Button type="button" size="lg" onClick={goCook} className="w-full transition-all duration-300 ease-out">
             <ChefHat aria-hidden size={18} strokeWidth={2.4} />
             {t("cookThisMeal")}
           </Button>

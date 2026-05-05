@@ -383,7 +383,11 @@
     "submitting": "Speichern…",
     "saved": "Gespeichert. Danke!",
     "saveFailed": "Bewertung konnte nicht gespeichert werden: {message}",
-    "blacklist": "Diese Komponente blockieren"
+    "blacklist": "Diese Komponente blockieren",
+    "errorFallback": {
+      "title": "Etwas ist schiefgelaufen",
+      "retry": "Erneut versuchen"
+    }
   },
   "history": {
     "title": "Verlauf",

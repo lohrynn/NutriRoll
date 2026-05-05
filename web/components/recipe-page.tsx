@@ -372,7 +372,11 @@ export function RecipePage() {
       </Card>
       <ol className="grid gap-3">
         {Array.from({ length: 3 }, (_, idx) => (
-          <li key={`recipe-skeleton-${idx}`}>
+          <li
+            key={`recipe-skeleton-${idx}`}
+            className="animate-fade-in-up"
+            style={{ animationDelay: `${(idx + 1) * 80}ms` }}
+          >
             <Card>
               <CardContent className="grid gap-3">
                 <div className="flex items-start justify-between gap-3">
