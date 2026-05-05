@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RecipePage } from "@/components/recipe-page";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { readRolledMealFromStorage } from "@/lib/recipe/storage";
 
 type PageState = "loading" | "missing" | "ready";
@@ -28,8 +29,12 @@ export function CookPage() {
   if (pageState === "loading") {
     return (
       <Card>
-        <CardContent className="grid gap-3">
-          <p className="text-sm text-[color:var(--color-muted)]">{t("loading")}</p>
+        <CardContent className="grid gap-3 animate-fade-in-up">
+          <p className="text-sm text-[color:var(--color-muted)] animate-soft-pulse">{t("loading")}</p>
+          <div className="grid gap-3">
+            <Skeleton className="h-12 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
+          </div>
         </CardContent>
       </Card>
     );
@@ -38,7 +43,7 @@ export function CookPage() {
   if (pageState === "missing") {
     return (
       <Card>
-        <CardContent className="grid gap-3">
+        <CardContent className="grid gap-3 animate-fade-in-up">
           <p className="text-sm text-[color:var(--color-muted)]">{t("noBowl")}</p>
           <Button asChild size="sm">
             <Link href="/roll">
@@ -51,5 +56,9 @@ export function CookPage() {
     );
   }
 
-  return <RecipePage />;
+  return (
+    <div className="animate-fade-in-up">
+      <RecipePage />
+    </div>
+  );
 }

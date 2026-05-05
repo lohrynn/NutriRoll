@@ -389,6 +389,11 @@
     "title": "Verlauf",
     "subtitle": "Jede Mahlzeit, die du gewürfelt, gekocht, gespeichert oder bewertet hast.",
     "empty": "Noch nichts hier. Mahlzeiten erscheinen nach deinem ersten Würfeln.",
+    "emptyState": {
+      "title": "Deine Kochspur beginnt mit einer Bowl.",
+      "body": "Würfle etwas für heute Abend und NutriRoll hält die ganze Geschichte hier fest.",
+      "cta": "Erste Bowl würfeln"
+    },
     "loading": "Verlauf wird geladen…",
     "loadError": "Verlauf konnte nicht geladen werden: {message}",
     "recap": {
@@ -427,6 +432,11 @@
     "loading": "Lade gespeicherte Bowls…",
     "error": "Konnte gespeicherte Bowls nicht laden: {message}",
     "empty": "Noch nichts gespeichert. Würfle eine Bowl, die dir gefällt, und tippe Speichern.",
+    "emptyState": {
+      "title": "Halte deine besten Bowls griffbereit.",
+      "body": "Wenn dir ein Wurf gefällt, speicherst du ihn einmal und kannst ihn später direkt wieder kochen oder planen.",
+      "cta": "Bowl zum Speichern würfeln"
+    },
     "cook": "Kochen",
     "delete": "Gespeicherte Bowl löschen",
     "slots": "{count, plural, one {# Slot} other {# Slots}}",

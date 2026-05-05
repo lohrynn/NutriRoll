@@ -2,6 +2,7 @@
 
 import { CalendarPlus, ChefHat, Heart, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -70,11 +71,17 @@ export function SavedPage() {
       )}
       {status.kind === "ok" && status.items.length === 0 && (
         <Card>
-          <CardContent className="grid place-items-center gap-2 py-8 text-center text-sm text-[color:var(--color-muted)]">
+          <CardContent className="grid place-items-center gap-3 py-8 text-center animate-fade-in-up">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)]">
               <Heart aria-hidden size={22} strokeWidth={2} />
             </span>
-            <p>{t("empty")}</p>
+            <div className="grid gap-1">
+              <p className="font-semibold text-[color:var(--color-fg)]">{t("emptyState.title")}</p>
+              <p className="text-sm text-[color:var(--color-muted)]">{t("emptyState.body")}</p>
+            </div>
+            <Button asChild>
+              <Link href="/roll">{t("emptyState.cta")}</Link>
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -101,6 +108,7 @@ export function SavedPage() {
                       size="sm"
                       onClick={() => cookSaved(meal)}
                       disabled={slotCount === 0}
+                      className="min-h-11 px-4"
                     >
                       <ChefHat aria-hidden size={14} strokeWidth={2.4} />
                       {t("cook")}
@@ -111,6 +119,7 @@ export function SavedPage() {
                       size="sm"
                       aria-label={t("delete")}
                       onClick={() => void deleteSaved(meal.id)}
+                      className="min-h-11 min-w-11 px-3"
                     >
                       <Trash2 aria-hidden size={14} />
                     </Button>

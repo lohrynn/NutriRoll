@@ -433,8 +433,8 @@ export function SettingsPage() {
                     onClick={() => toggleAllergen(a)}
                     className={
                       active
-                        ? "rounded-full bg-[color:var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-brand-fg)] transition active:scale-95"
-                        : "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium transition hover:border-[color:var(--color-brand)] active:scale-95"
+                        ? "min-h-11 rounded-full bg-[color:var(--color-brand)] px-4 py-2 text-xs font-medium text-[color:var(--color-brand-fg)] transition-all duration-300 active:scale-95"
+                        : "min-h-11 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-4 py-2 text-xs font-medium transition-all duration-300 hover:border-[color:var(--color-brand)] active:scale-95"
                     }
                   >
                     {a}
@@ -479,7 +479,12 @@ export function SettingsPage() {
             <output aria-live="polite" className="text-xs text-[color:var(--color-muted)]">
               {savedAt ? t("profile.saved") : ""}
             </output>
-            <Button type="button" onClick={() => void saveProfile()} disabled={saving || !profile}>
+            <Button
+              type="button"
+              onClick={() => void saveProfile()}
+              disabled={saving || !profile}
+              className="min-h-11 px-4"
+            >
               {saving ? t("profile.saving") : t("profile.save")}
               <Save aria-hidden size={14} />
             </Button>
@@ -553,7 +558,13 @@ export function SettingsPage() {
             ))}
           </div>
           <div className="flex justify-end">
-            <Button type="button" variant="outline" size="sm" onClick={resetWeights}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={resetWeights}
+              className="min-h-11 px-4"
+            >
               {t("recommendations.reset")}
               <RotateCcw aria-hidden size={14} />
             </Button>
@@ -621,7 +632,12 @@ export function SettingsPage() {
             <output aria-live="polite" className="text-xs text-[color:var(--color-muted)]">
               {targetsSavedAt ? t("defaultNutritionTargets.saved") : ""}
             </output>
-            <Button type="button" size="sm" onClick={() => void saveDefaultTargets()}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => void saveDefaultTargets()}
+              className="min-h-11 px-4"
+            >
               {t("defaultNutritionTargets.save")}
               <Save aria-hidden size={14} />
             </Button>
@@ -711,6 +727,7 @@ export function SettingsPage() {
                 variant="outline"
                 onClick={() => void saveLlmSettings({ includeApiKey: true })}
                 disabled={llmTesting || llmApiKey.trim() === ""}
+                className="min-h-11 px-4"
               >
                 {llmTesting ? t("llm.testing") : t("llm.testConnection")}
               </Button>
@@ -754,6 +771,7 @@ export function SettingsPage() {
               size="sm"
               onClick={() => void saveLlmSettings()}
               disabled={!llmConfig || llmSaving}
+              className="min-h-11 px-4"
             >
               {llmSaving ? t("profile.saving") : t("llm.save")}
               <Save aria-hidden size={14} />
@@ -785,8 +803,8 @@ export function SettingsPage() {
                     onClick={() => toggleEquipment(piece)}
                     className={
                       active
-                        ? "rounded-full bg-[color:var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-brand-fg)] transition active:scale-95"
-                        : "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium transition hover:border-[color:var(--color-brand)] active:scale-95"
+                        ? "min-h-11 rounded-full bg-[color:var(--color-brand)] px-4 py-2 text-xs font-medium text-[color:var(--color-brand-fg)] transition-all duration-300 active:scale-95"
+                        : "min-h-11 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-4 py-2 text-xs font-medium transition-all duration-300 hover:border-[color:var(--color-brand)] active:scale-95"
                     }
                   >
                     {tEquipment(`pieces.${piece}`)}
@@ -804,6 +822,7 @@ export function SettingsPage() {
               size="sm"
               onClick={() => void saveEquipment()}
               disabled={!profile || equipmentVocab.length === 0}
+              className="min-h-11 px-4"
             >
               {tEquipment("save")}
               <Save aria-hidden size={14} />
@@ -838,6 +857,7 @@ export function SettingsPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => void restoreFromBlacklist(c)}
+                    className="min-h-11 px-4"
                   >
                     {t("blacklist.restore")}
                   </Button>
@@ -861,6 +881,7 @@ export function SettingsPage() {
               variant="outline"
               onClick={() => void exportData()}
               disabled={exporting}
+              className="min-h-11 px-4"
             >
               {exporting ? t("data.exporting") : t("data.export")}
               <Download aria-hidden size={14} />
@@ -875,6 +896,7 @@ export function SettingsPage() {
                   setTheme("system");
                 }
               }}
+              className="min-h-11 px-4"
             >
               {t("data.resetLocal")}
               <RotateCcw aria-hidden size={14} />

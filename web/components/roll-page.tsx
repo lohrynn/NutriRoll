@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api/client";
 import { useAllowedMethods } from "@/lib/components/meta";
 import type { Category, CookingMethod, Equipment } from "@/lib/components/types";
@@ -403,6 +404,52 @@ export function RollPage() {
     router.push("/plan");
   }, [controls.portions, planSlot, rolledPortions, router, status]);
 
+  const renderRollingSkeleton = () => (
+    <section aria-label={t("results")} className="grid gap-3 animate-fade-in-up">
+      <Card>
+        <CardContent className="grid gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="grid gap-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-40" />
+            </div>
+            <Skeleton className="h-7 w-24 rounded-full" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-7 w-20 rounded-full" />
+            <Skeleton className="h-7 w-24 rounded-full" />
+            <Skeleton className="h-7 w-28 rounded-full" />
+            <Skeleton className="h-7 w-24 rounded-full" />
+          </div>
+        </CardContent>
+      </Card>
+      <ul className="grid gap-3">
+        {DEFAULT_SLOTS.map((slotName, idx) => (
+          <li key={`rolling-slot-${idx}-${String(slotName)}`}>
+            <Card>
+              <CardContent className="grid gap-3 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-11 w-11 rounded-xl" />
+                    <div className="grid gap-2">
+                      <Skeleton className="h-5 w-32" />
+                      <Skeleton className="h-6 w-20 rounded-full" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-11 w-28 rounded-full" />
+                </div>
+                <div className="grid gap-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-4/5" />
+                </div>
+              </CardContent>
+            </Card>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
   return (
     <div className="grid gap-4">
       <Card>
@@ -501,6 +548,7 @@ export function RollPage() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setDirection(INITIAL_DIRECTION)}
+                className="min-h-11 px-4"
               >
                 {t("direction.clear")}
               </Button>
@@ -522,8 +570,8 @@ export function RollPage() {
                     onClick={() => toggleSetMember("cuisines", c)}
                     className={
                       active
-                        ? "rounded-full bg-[color:var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-brand-fg)] shadow-[var(--shadow-pop)] transition active:scale-95"
-                        : "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-fg)] transition hover:border-[color:var(--color-brand)] active:scale-95"
+                        ? "min-h-11 rounded-full bg-[color:var(--color-brand)] px-4 py-2 text-xs font-medium text-[color:var(--color-brand-fg)] shadow-[var(--shadow-pop)] transition-all duration-300 active:scale-95"
+                        : "min-h-11 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-4 py-2 text-xs font-medium text-[color:var(--color-fg)] transition-all duration-300 hover:border-[color:var(--color-brand)] active:scale-95"
                     }
                   >
                     {tDirection(`cuisines.${c}`)}
@@ -545,8 +593,8 @@ export function RollPage() {
                     onClick={() => toggleSetMember("moods", m)}
                     className={
                       active
-                        ? "rounded-full bg-[color:var(--color-brand)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-brand-fg)] shadow-[var(--shadow-pop)] transition active:scale-95"
-                        : "rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-3 py-1.5 text-xs font-medium text-[color:var(--color-fg)] transition hover:border-[color:var(--color-brand)] active:scale-95"
+                        ? "min-h-11 rounded-full bg-[color:var(--color-brand)] px-4 py-2 text-xs font-medium text-[color:var(--color-brand-fg)] shadow-[var(--shadow-pop)] transition-all duration-300 active:scale-95"
+                        : "min-h-11 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-2)] px-4 py-2 text-xs font-medium text-[color:var(--color-fg)] transition-all duration-300 hover:border-[color:var(--color-brand)] active:scale-95"
                     }
                   >
                     {tDirection(`moods.${m}`)}
@@ -598,7 +646,13 @@ export function RollPage() {
           <CardTitle className="flex items-center justify-between gap-2">
             <span>{tTargets("title")}</span>
             {Object.keys(macroTargets).length > 0 && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => setMacroTargets({})}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setMacroTargets({})}
+                className="min-h-11 px-4"
+              >
                 {tTargets("clear")}
               </Button>
             )}
@@ -715,8 +769,20 @@ export function RollPage() {
         </output>
       )}
 
+      {status.kind === "rolling" && (
+        <>
+          <output
+            aria-live="polite"
+            className="text-sm text-[color:var(--color-muted)] animate-soft-pulse"
+          >
+            {pendingAction === "prompt" ? t("prompt.loading") : t("rolling")}
+          </output>
+          {renderRollingSkeleton()}
+        </>
+      )}
+
       {status.kind === "ok" && (
-        <section aria-label={t("results")} className="grid gap-3">
+        <section aria-label={t("results")} className="grid gap-3 animate-fade-in-up">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-semibold tracking-tight">{t("results")}</h2>
             <div className="flex flex-wrap gap-2">
@@ -731,13 +797,14 @@ export function RollPage() {
                       if (e.key === "Enter") void confirmSave();
                       if (e.key === "Escape") setSaveOpen(false);
                     }}
-                    className="h-8 text-sm"
+                    className="h-11 text-sm"
                   />
                   <Button
                     type="button"
                     size="sm"
                     onClick={() => void confirmSave()}
                     disabled={!saveName.trim()}
+                    className="min-h-11 px-4"
                   >
                     {t("saveBowl")}
                   </Button>
@@ -746,12 +813,19 @@ export function RollPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => setSaveOpen(false)}
+                    className="min-h-11 min-w-11 px-3"
                   >
                     ✕
                   </Button>
                 </div>
               ) : (
-                <Button type="button" size="sm" variant="outline" onClick={() => saveBowl()}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => saveBowl()}
+                  className="min-h-11 px-4"
+                >
                   {t("saveBowl")}
                 </Button>
               )}
@@ -760,7 +834,7 @@ export function RollPage() {
                   aria-label={t("planSlot")}
                   value={planSlot}
                   onChange={(e) => setPlanSlot(e.target.value as MealSlot)}
-                  className="h-8 text-sm"
+                  className="h-11 text-sm"
                 >
                   {MEAL_SLOTS.map((s) => (
                     <option key={s} value={s}>
@@ -768,7 +842,13 @@ export function RollPage() {
                     </option>
                   ))}
                 </Select>
-                <Button type="button" size="sm" variant="outline" onClick={() => void planBowl()}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void planBowl()}
+                  className="min-h-11 px-4"
+                >
                   {t("planToday")}
                 </Button>
               </div>
@@ -879,6 +959,7 @@ export function RollPage() {
                           size="sm"
                           onClick={() => void rerollSlot(idx, slot)}
                           disabled={pendingAction === "reroll"}
+                          className="min-h-11 px-4"
                         >
                           <Dice5 aria-hidden size={14} />
                           {t("rerollSlot")}

@@ -395,6 +395,11 @@
     "title": "History",
     "subtitle": "Every meal you rolled, cooked, saved or rated.",
     "empty": "Nothing here yet. Your meals will appear after your first roll.",
+    "emptyState": {
+      "title": "Your cooking trail starts with one bowl.",
+      "body": "Roll something for tonight and NutriRoll will keep the full story here.",
+      "cta": "Roll your first bowl"
+    },
     "loading": "Loading history…",
     "loadError": "Could not load history: {message}",
     "recap": {
@@ -433,6 +438,11 @@
     "loading": "Loading saved meals…",
     "error": "Couldn't load saved meals: {message}",
     "empty": "Nothing saved yet. Roll a bowl you love and tap Save.",
+    "emptyState": {
+      "title": "Keep your best bowls within reach.",
+      "body": "When a roll looks good, save it once and it will be ready to cook or plan again.",
+      "cta": "Roll a bowl to save"
+    },
     "cook": "Cook",
     "delete": "Delete saved meal",
     "slots": "{count, plural, one {# slot} other {# slots}}",

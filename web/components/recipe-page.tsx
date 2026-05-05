@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiClient } from "@/lib/api/client";
 import type { Category } from "@/lib/components/types";
 import { requestNotificationPermission, useCookTimer } from "@/lib/cook/timers";
@@ -141,17 +142,32 @@ function BlockTimer({ totalMinutes }: BlockTimerProps) {
           variant="ghost"
           aria-label={t("start")}
           onClick={() => setRunning(true)}
+          className="h-11 w-11"
         >
           <Play aria-hidden size={14} />
         </Button>
       )}
       {running && (
-        <Button type="button" size="icon" variant="ghost" aria-label={t("pause")} onClick={stop}>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          aria-label={t("pause")}
+          onClick={stop}
+          className="h-11 w-11"
+        >
           <Pause aria-hidden size={14} />
         </Button>
       )}
       {(done || remaining < totalSeconds) && (
-        <Button type="button" size="icon" variant="ghost" aria-label={t("reset")} onClick={reset}>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          aria-label={t("reset")}
+          onClick={reset}
+          className="h-11 w-11"
+        >
           <RotateCcw aria-hidden size={14} />
         </Button>
       )}
@@ -201,6 +217,7 @@ function StepTimer({ stepKey, durationSec, blockTitle, stepText }: StepTimerProp
             void requestNotificationPermission();
             timer.start();
           }}
+          className="h-11 w-11"
         >
           <Play aria-hidden size={12} />
         </Button>
@@ -212,6 +229,7 @@ function StepTimer({ stepKey, durationSec, blockTitle, stepText }: StepTimerProp
           variant="ghost"
           aria-label={t("pause")}
           onClick={timer.pause}
+          className="h-11 w-11"
         >
           <Pause aria-hidden size={12} />
         </Button>
@@ -223,6 +241,7 @@ function StepTimer({ stepKey, durationSec, blockTitle, stepText }: StepTimerProp
           variant="ghost"
           aria-label={t("reset")}
           onClick={timer.reset}
+          className="h-11 w-11"
         >
           <RotateCcw aria-hidden size={12} />
         </Button>
@@ -332,30 +351,61 @@ export function RecipePage() {
   const renderStepSkeleton = (count: number) => (
     <div aria-hidden className="grid gap-2">
       {Array.from({ length: Math.max(1, count) }, (_, idx) => (
-        <div
-          key={`step-skeleton-${count}-${idx % 2 === 0 ? "wide" : "narrow"}`}
-          className="grid gap-2"
-        >
-          <div className="h-3 w-12 animate-pulse rounded bg-[color:var(--color-surface-2)]" />
-          <div
-            className={`h-4 animate-pulse rounded bg-[color:var(--color-surface-2)] ${
-              idx % 2 === 0 ? "w-full" : "w-4/5"
-            }`}
-          />
+        <div key={`step-skeleton-${count}-${idx}`} className="grid gap-2">
+          <Skeleton className="h-3 w-12 rounded-md" />
+          <Skeleton className={idx % 2 === 0 ? "h-4 w-full rounded-md" : "h-4 w-4/5 rounded-md"} />
         </div>
       ))}
     </div>
   );
 
+  const renderRecipeSkeleton = () => (
+    <section aria-label={t("blocks")} className="grid gap-3 animate-fade-in-up">
+      <Card>
+        <CardContent className="flex items-center gap-3 p-4">
+          <Skeleton className="h-10 w-10 rounded-xl" />
+          <div className="grid flex-1 gap-2">
+            <Skeleton className="h-3 w-24 rounded-md" />
+            <Skeleton className="h-6 w-36 rounded-md" />
+          </div>
+        </CardContent>
+      </Card>
+      <ol className="grid gap-3">
+        {Array.from({ length: 3 }, (_, idx) => (
+          <li key={`recipe-skeleton-${idx}`}>
+            <Card>
+              <CardContent className="grid gap-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <Skeleton className="h-10 w-10 rounded-xl" />
+                    <div className="grid gap-2">
+                      <Skeleton className="h-5 w-40 rounded-md" />
+                      <div className="flex gap-2">
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                  <Skeleton className="h-8 w-24 rounded-full" />
+                </div>
+                {renderStepSkeleton(3)}
+              </CardContent>
+            </Card>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+
   return (
     <div className="grid gap-4">
       {pageState === "loading" && recipe === null && (
-        <output
-          aria-live="polite"
-          className="rounded-xl bg-[color:var(--color-surface-2)] p-3 text-sm text-[color:var(--color-muted)]"
-        >
-          {t("loading")}
-        </output>
+        <>
+          <output aria-live="polite" className="text-sm text-[color:var(--color-muted)] animate-soft-pulse">
+            {t("loading")}
+          </output>
+          {renderRecipeSkeleton()}
+        </>
       )}
 
       {pageState === "missing" && (
@@ -364,7 +414,7 @@ export function RecipePage() {
             <p className="text-sm">{t("missing")}</p>
             <Link
               href="/roll"
-              className="text-sm font-medium text-[color:var(--color-brand)] underline-offset-2 hover:underline"
+              className="inline-flex min-h-11 items-center text-sm font-medium text-[color:var(--color-brand)] underline-offset-2 transition-colors hover:underline"
             >
               {t("backToRoll")} →
             </Link>
@@ -382,7 +432,7 @@ export function RecipePage() {
       )}
 
       {recipe !== null && pageState === "ready" && (
-        <section aria-label={t("blocks")} className="grid gap-3">
+        <section aria-label={t("blocks")} className="grid gap-3 animate-fade-in-up">
           <Card>
             <CardContent className="flex items-center gap-3 p-4">
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)]">
@@ -422,7 +472,7 @@ export function RecipePage() {
                       aria-pressed={polishMode === option}
                       onClick={() => onPolishModeChange(option)}
                       disabled={isRefreshingSteps}
-                      className="rounded-full px-3"
+                      className="min-h-11 rounded-full px-4 transition-all duration-300"
                     >
                       {t(`polish.${option}`)}
                     </Button>

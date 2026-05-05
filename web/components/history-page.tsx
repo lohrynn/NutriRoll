@@ -2,6 +2,7 @@
 
 import { ChefHat, ClipboardList, Flame, Save, Sparkles, Star, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -309,8 +310,17 @@ export function HistoryPageView() {
 
       {status.kind === "ok" && status.items.length === 0 && (
         <Card>
-          <CardContent>
-            <p className="text-sm text-[color:var(--color-muted)]">{t("empty")}</p>
+          <CardContent className="grid place-items-center gap-3 py-8 text-center animate-fade-in-up">
+            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-[color:var(--color-brand-soft)] text-[color:var(--color-brand)]">
+              <ChefHat className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <div className="grid gap-1">
+              <p className="font-semibold">{t("emptyState.title")}</p>
+              <p className="text-sm text-[color:var(--color-muted)]">{t("emptyState.body")}</p>
+            </div>
+            <Button asChild>
+              <Link href="/roll">{t("emptyState.cta")}</Link>
+            </Button>
           </CardContent>
         </Card>
       )}
