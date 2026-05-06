@@ -1,13 +1,10 @@
-import { getTranslations } from "next-intl/server";
-
-import { OnboardingPage } from "@/components/onboarding-page";
-import { PageShell } from "@/components/page-shell";
-
-export default async function OnboardingRoute() {
-  const t = await getTranslations("onboarding");
+export default function OnboardingPage() {
   return (
-    <PageShell title={t("title")} description={t("subtitle")}>
-      <OnboardingPage />
-    </PageShell>
+    <main className="flex min-h-[100dvh] items-center justify-center p-6">
+      <div className="text-center">
+        <h1 className="text-2xl font-semibold text-[var(--color-fg)]">Welcome</h1>
+        <p className="mt-2 text-[var(--color-muted)]">Onboarding placeholder.</p>
+      </div>
+    </main>
   );
 }
